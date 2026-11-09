@@ -571,7 +571,7 @@ const DOMAINS={
     key:'consumer',name:'Consumer IoT',short:'Consumer IoT',live:true,flow:true,
     ex:'Smart home and personal connected devices such as cameras, smart speakers, locks, plugs, wearables and their companion apps.',
     standards:[
-      {id:'isvs',code:'OWASP ISVS',name:'OWASP IoT Security Verification Standard — security requirements for IoT ecosystems, devices and their components',meta:[['Scope','Consumer IoT devices and companion apps'],['Levels','Level 1–3'],['Questionnaire','15 Yes/No (A38–A54) · 20 assurance (Q111–Q134)'],['Requirements','64 GoI IDs']],live:true,flow:true},
+      {id:'isvs',code:'OWASP ISVS',name:'OWASP IoT Security Verification Standard — security requirements for IoT ecosystems, devices and their components',meta:[['Scope','Consumer IoT devices and companion apps'],['Levels','Level 1–3'],['Questionnaire','15 Yes/No (A38–A54) · 20 assurance (Q111–Q134)'],['Requirements','60 GoI IDs']],live:true,flow:true},
       {id:'er',code:'Essential Requirements',name:'Essential Requirements (ER) for consumer IoT devices — a single set of baseline security requirements, without levels',meta:[['Scope','Consumer IoT devices and companion apps'],['Levels','None — one requirement set'],['Questionnaire','9 Yes/No (A38–A54) · 16 assurance (Q110–Q135)'],['Requirements','22 GoI IDs']],live:true,flow:true}
     ],
     target:'consumer IoT device',levels:'L1 · L2 · L3',
@@ -910,11 +910,12 @@ const goiOf=e=>MGOI[e.num+'/'+e.re];
 const goiIdMed=e=>(goiOf(e)||{}).id||'';
 const goiId=e=>P.idOf(e);const crTitle=e=>P.titleOf(e);
 function crTitleMed(e){const g=goiOf(e);if(g)return g.t;return RE_TITLE[e.num+'/'+e.re]||(CR_TITLE[e.num]||'')+(e.re?` — RE(${e.re})`:'');}
-function gateOn(g,app){return !!app.sl&&g.sl<=app.sl&&(!g.parent||app.gates[g.parent]===true);}
+const atLv=(x,sl)=>x.lvs?x.lvs.includes(sl):x.sl<=sl;
+function gateOn(g,app){return !!app.sl&&atLv(g,app.sl)&&(!g.parent||app.gates[g.parent]===true);}
 function visibleGates(app){return MGATES.filter(g=>gateOn(g,app));}
 function gatesDoneM(app){return visibleGates(app).every(g=>typeof app.gates[g.id]==='boolean');}
 function qVisible(q,app,full){
-  if(!app.sl||q.sl>app.sl)return false;
+  if(!app.sl||!atLv(q,app.sl))return false;
   if(full)return true;
   if(q.gate){const g=MG[q.gate];if(!gateOn(g,app)||(q.gateAny?typeof app.gates[q.gate]!=='boolean':app.gates[q.gate]!==true))return false;}
   if(q.when&&!q.when(app))return false;
@@ -929,9 +930,9 @@ const srcLabel=id=>id===ALWAYS?(P.alwaysLabel||'All devices · no question'):id;
 const srcList=(e,sep)=>e.src.map(srcLabel).join(sep||', ');
 function crSources(app,full){
   const m=new Map();
-  (P.always||[]).forEach(c=>{if(app.sl&&c.sl<=app.sl)m.set(crKey(c),{num:c.num,re:c.re,edr:c.pre==='EDR',src:[ALWAYS],always:c.sl});});
-  const add=(s,id)=>parseCRs(s).forEach(c=>{if(c.sl&&app.sl&&c.sl>app.sl)return;const k=crKey(c);const e=m.get(k)||{num:c.num,re:c.re,edr:false,src:[]};if(c.pre==='EDR')e.edr=true;if(!e.src.includes(id))e.src.push(id);m.set(k,e);});
-  MGATES.forEach(g=>{if(full?(app.sl&&g.sl<=app.sl):(gateOn(g,app)&&app.gates[g.id]===true))add(g.cr,g.id);});
+  (P.always||[]).forEach(c=>{if(app.sl&&atLv(c,app.sl))m.set(crKey(c),{num:c.num,re:c.re,edr:c.pre==='EDR',src:[ALWAYS],always:c.sl});});
+  const add=(s,id)=>parseCRs(s).forEach(c=>{if(c.sl&&app.sl&&!atLv(c,app.sl))return;const k=crKey(c);const e=m.get(k)||{num:c.num,re:c.re,edr:false,src:[]};if(c.pre==='EDR')e.edr=true;if(!e.src.includes(id))e.src.push(id);m.set(k,e);});
+  MGATES.forEach(g=>{if(full?(app.sl&&atLv(g,app.sl)):(gateOn(g,app)&&app.gates[g.id]===true))add(g.cr,g.id);});
   MQ.forEach(q=>{if(qVisible(q,app,full))add(q.cr,q.id);});
   return m;}
 const crNameMed=e=>`${e.edr?'EDR':'CR'} ${e.num}${e.re?` RE(${e.re})`:''}`;
@@ -947,7 +948,7 @@ function crMap(app){
   const inList=[...inS.values()].sort((a,b)=>crSort(a)-crSort(b));
   const exList=[...full.entries()].filter(([k])=>!inS.has(k)).map(([k,e])=>Object.assign({},e,{why:[...new Set(e.src.map(id=>exclReason(id,app)).filter(Boolean))]})).sort((a,b)=>crSort(a)-crSort(b));
   return {inList,exList};}
-function slStats(sl){const app={sl,gates:{},ans:{},files:{}};return {g:MGATES.filter(g=>g.sl<=sl).length,q:MQ.filter(q=>q.sl<=sl).length,cr:crSources(app,true).size};}
+function slStats(sl){const app={sl,gates:{},ans:{},files:{}};return {g:MGATES.filter(g=>atLv(g,sl)).length,q:MQ.filter(q=>atLv(q,sl)).length,cr:crSources(app,true).size};}
 
 /* ---------- completeness ---------- */
 function missingParts(q,a,app){
@@ -1066,9 +1067,9 @@ function mDetailsMed(){
 /* ---------- Step 2 · Security Level ---------- */
 function mSL(app){
   return `<section class="card stack" style="gap:20px">
-    <div class="stack" style="gap:4px"><h3>Declare the target ${P.levelWord==='Level'?'level':P.levelWord}</h3><p class="muted small">The ${P.levelWord==='Level'?'level':P.levelWord} decides which questions the questionnaire asks${P.idLevels?' and which requirements are assessed':''}. Each level includes everything asked at the levels below it.</p></div>
+    <div class="stack" style="gap:4px"><h3>Declare the target ${P.levelWord==='Level'?'level':P.levelWord}</h3><p class="muted small">The ${P.levelWord==='Level'?'level':P.levelWord} decides which questions the questionnaire asks${P.idLevels?' and which requirements are assessed':''}. ${P.indepLevels?'Each level has its own requirement list.':'Each level includes everything asked at the levels below it.'}</p></div>
     <div class="slgrid" role="radiogroup" aria-label="${P.levelWord}"${P.levelList.length===3?' style="grid-template-columns:repeat(3,minmax(0,1fr))"':''}>${P.levelList.map(n=>{const s=slStats(n);return `<button class="slcard" role="radio" aria-checked="${app.sl===n}" data-a="m-sl" data-sl="${n}"><span class="big"><small>${P.lvlBig}</small>${n}</span><p>${P.levelDesc[n]}</p><span class="slmeta">${slItems(n)} questionnaire items · up to ${s.cr} ${P.reqWord==='CR'?'CRs':'requirements'}</span></button>`;}).join('')}</div>
-    <p class="small muted">${(()=>{const L=P.levelList,same=L.slice(1).filter(n=>slItems(n)===slItems(n-1));return same.map(n=>{const d=slStats(n).cr-slStats(n-1).cr;return `${lvl(n-1)} and ${lvl(n)} ask the same questions${d>0?`; ${lvl(n)} assesses ${d} more requirement${d>1?'s':''}`:''}.`;}).join(' ');})()} Changing the level later keeps your answers.</p>
+    <p class="small muted">${(()=>{if(P.indepLevels)return '';const L=P.levelList,same=L.slice(1).filter(n=>slItems(n)===slItems(n-1));return same.map(n=>{const d=slStats(n).cr-slStats(n-1).cr;return `${lvl(n-1)} and ${lvl(n)} ask the same questions${d>0?`; ${lvl(n)} assesses ${d} more requirement${d>1?'s':''}`:''}.`;}).join(' ');})()} Changing the level later keeps your answers.</p>
     <div class="qfoot"><button class="btn quiet" data-a="m-step" data-k="details">← Back</button><button class="btn primary" data-a="m-sl-save" ${app.sl?'':'disabled'}>Save &amp; Continue →</button></div>
   </section>`;}
 
@@ -1090,10 +1091,10 @@ function itemMissing(it,app){
   });return m;}
 const itemDone=(it,app)=>!itemMissing(it,app).length;
 const lvl=n=>P.lvlShort+' '+n;
-const slItems=sl=>ITEMS.filter(it=>(isGate(it.id)?MG[it.id].sl:MQI[it.id].sl)<=sl).length;
+const slItems=sl=>ITEMS.filter(it=>atLv(isGate(it.id)?MG[it.id]:MQI[it.id],sl)).length;
 const crChips=s=>parseCRs(s).map(c=>`<span class="idchip" title="${esc(P.hasRef?crLabel(c)+' · '+crTitle(c):goiId(c)+' · '+(crTitle(c)||P.untitled))}">${esc(goiId(c)||crLabel(c))}</span>`).join('');
 function gateBlock(g,app){
-  const v=app.gates[g.id];const qs=MQ.filter(q=>q.gate===g.id&&!q.gateAny&&q.sl<=app.sl).map(q=>q.id),qa=MQ.filter(q=>q.gate===g.id&&q.gateAny&&q.sl<=app.sl).map(q=>q.id);
+  const v=app.gates[g.id];const qs=MQ.filter(q=>q.gate===g.id&&!q.gateAny&&atLv(q,app.sl)).map(q=>q.id),qa=MQ.filter(q=>q.gate===g.id&&q.gateAny&&atLv(q,app.sl)).map(q=>q.id);
   return `<div class="stack" style="gap:10px">
     <div class="row between" style="align-items:flex-start;flex-wrap:nowrap;gap:16px"><div class="qtitle">${esc(g.q)}</div>
       <div class="seg" role="group" aria-label="${g.id}" style="flex:none"><button class="yes" data-a="m-gate" data-g="${g.id}" data-v="1" aria-pressed="${v===true}">${esc(g.yes||'Yes')}</button><button data-a="m-gate" data-g="${g.id}" data-v="0" aria-pressed="${v===false}">${esc(g.no||'No')}</button></div></div>
@@ -1323,7 +1324,7 @@ function mapView(){
   const L=P.levelList,top=L[L.length-1];if(!L.includes(S.mapSL))S.mapSL=top;
   const full=L.map(n=>crSources({sl:n,gates:{},ans:{},files:{}},true));
   const all=[...full[L.length-1].entries()].sort((a,b)=>crSort(a[1])-crSort(b[1]));
-  const minSL=k=>L.find(n=>full[n-1].has(k));
+  const minSL=k=>L.find(n=>full[n-1].has(k));const lvsOf=k=>L.filter(n=>full[n-1].has(k));
   const frs=P.groups.filter(f=>all.some(([k,e])=>frOf(e)===f));
   const sim={sl:S.mapSL,gates:{},files:{},ans:JSON.parse(JSON.stringify(P.mapSim||{}))};
   MGATES.forEach(g=>{sim.gates[g.id]=!!S.mapGates[g.id];});
@@ -1333,7 +1334,7 @@ function mapView(){
   const rows=all.filter(([k,e])=>S.mapFR==='all'||String(frOf(e))===String(S.mapFR));
   const RW=P.reqWord+'s',noGroups=P.groups.filter(f=>!frs.includes(f));
   return `<div class="section-h"><div class="stack" style="gap:4px"><span class="eyebrow">${esc(DOMAINS[P.key].name)} · ${esc(stdObj().code)}</span><h2>Requirement map</h2></div></div>
-  <section class="card stack"><h3>${RW} by ${P.levelWord}</h3><p class="small muted">Effect of the ${P.levelWord} filter alone, with every Yes/No question answered Yes and every follow-up triggered. Levels are cumulative.</p>
+  <section class="card stack"><h3>${RW} by ${P.levelWord}</h3><p class="small muted">Effect of the ${P.levelWord} filter alone, with every Yes/No question answered Yes and every follow-up triggered. ${P.indepLevels?'Each level has its own requirement list.':'Levels are cumulative.'}</p>
     <div class="tw"><table><thead><tr><th>${esc(P.groupWord)}</th>${L.map(n=>`<th class="num">${lvl(n)}</th>`).join('')}</tr></thead><tbody>
       ${frs.map(f=>`<tr><td>${esc(P.groupName(f))}</td>${full.map(m=>`<td class="num">${[...m.values()].filter(e=>frOf(e)===f).length}</td>`).join('')}</tr>`).join('')}</tbody>
       <tfoot><tr><td>Total</td>${full.map(m=>`<td class="num">${m.size}</td>`).join('')}</tr></tfoot></table></div>
@@ -1341,14 +1342,14 @@ function mapView(){
   <section class="card stack" style="gap:18px"><div class="section-h"><h3>Try the filters</h3><span class="small"><b>${inS.size}</b> of ${atSL.size} ${RW} at ${lvl(S.mapSL)} apply · <b>${visibleQs(sim).length}</b> detail questions asked</span></div>
     <div class="mapctl">
       <div class="stack" style="gap:6px"><span class="lbl">Declared ${P.levelWord}</span><div class="seg">${L.map(n=>`<button data-a="map-sl" data-sl="${n}" aria-pressed="${S.mapSL===n}">${lvl(n)}</button>`).join('')}</div></div>
-      <div class="stack" style="gap:6px;min-width:0"><span class="lbl">Yes/No questions answered Yes</span><div class="gtog">${MGATES.map(g=>{const off=g.sl>S.mapSL||(g.parent&&!S.mapGates[g.parent]);return `<button data-a="map-gate" data-g="${g.id}" aria-pressed="${!!S.mapGates[g.id]&&!off}" ${off?'disabled':''} title="${esc(g.q)}${g.sl>S.mapSL?' (asked from '+lvl(g.sl)+')':g.parent?' (asked when '+g.parent+' is Yes)':''}">${g.id}</button>`;}).join('')}</div></div>
+      <div class="stack" style="gap:6px;min-width:0"><span class="lbl">Yes/No questions answered Yes</span><div class="gtog">${MGATES.map(g=>{const off=!atLv(g,S.mapSL)||(g.parent&&!S.mapGates[g.parent]);return `<button data-a="map-gate" data-g="${g.id}" aria-pressed="${!!S.mapGates[g.id]&&!off}" ${off?'disabled':''} title="${esc(g.q)}${!atLv(g,S.mapSL)?(g.lvs?' (not asked at '+lvl(S.mapSL)+')':' (asked from '+lvl(g.sl)+')'):g.parent?' (asked when '+g.parent+' is Yes)':''}">${g.id}</button>`;}).join('')}</div></div>
       <div class="stack" style="gap:6px"><label class="lbl" for="map-fr">Show</label><select id="map-fr" data-mapfr="1" style="width:auto"><option value="all">All ${esc(P.groupWord==='Category'?'categories':P.groupWord.toLowerCase()+'s')}</option>${frs.map(f=>`<option value="${f}" ${String(S.mapFR)===String(f)?'selected':''}>${esc(P.groupName(f))}</option>`).join('')}</select></div>
     </div>
     <p class="small muted">${P.mapSimNote} Hover a Yes/No button to see its question.</p>
-    <div class="tw"><table><thead><tr><th>ID</th>${P.hasRef?'<th>Requirement</th><th>Title</th>':`<th>${esc(P.groupWord)}</th>`}<th class="num">From ${P.lvlShort}</th><th>Applicability</th><th>Evidence questions</th><th>With these answers</th></tr></thead><tbody>
+    <div class="tw"><table><thead><tr><th>ID</th>${P.hasRef?'<th>Requirement</th><th>Title</th>':`<th>${esc(P.groupWord)}</th>`}<th class="num">${P.indepLevels?esc(P.lvlShort)+'s':'From '+esc(P.lvlShort)}</th><th>Applicability</th><th>Evidence questions</th><th>With these answers</th></tr></thead><tbody>
       ${rows.map(([k,e])=>{const inn=inS.has(k);const m=minSL(k);let why='';
-        if(!inn)why=m>S.mapSL?'Above declared '+P.lvlShort:[...new Set((atSL.get(k)||e).src.map(id=>exclReason(id,sim)).filter(Boolean))].join('; ');
-        return `<tr class="${inn?'':'dim'}"><td class="mono nowrap">${esc(goiId(e))}</td>${P.hasRef?`<td class="mono nowrap">${esc(crName(e))}</td><td>${esc(crTitle(e))}</td>`:`<td class="small">${esc(P.groupName(frOf(e)))}</td>`}<td class="num">${m}</td><td class="small">${esc(appl(e))}</td><td class="mono small">${e.always?'— (no question)':e.src.join(', ')}</td><td>${inn?'<span class="pill prog">Assessed</span>':`<span class="small">${esc(why)}</span>`}</td></tr>`;}).join('')}</tbody></table></div></section>
+        if(!inn)why=P.indepLevels?(!lvsOf(k).includes(S.mapSL)?'Not at declared '+P.lvlShort:''):m>S.mapSL?'Above declared '+P.lvlShort:'';if(!inn&&!why)why=[...new Set((atSL.get(k)||e).src.map(id=>exclReason(id,sim)).filter(Boolean))].join('; ');
+        return `<tr class="${inn?'':'dim'}"><td class="mono nowrap">${esc(goiId(e))}</td>${P.hasRef?`<td class="mono nowrap">${esc(crName(e))}</td><td>${esc(crTitle(e))}</td>`:`<td class="small">${esc(P.groupName(frOf(e)))}</td>`}<td class="num">${P.indepLevels?lvsOf(k).join(', '):m}</td><td class="small">${esc(appl(e))}</td><td class="mono small">${e.always?'— (no question)':e.src.join(', ')}</td><td>${inn?'<span class="pill prog">Assessed</span>':`<span class="small">${esc(why)}</span>`}</td></tr>`;}).join('')}</tbody></table></div></section>
   ${(()=>{if(P.key!=='medical')return '';const cov=new Set(all.map(([k])=>k));const miss=Object.entries(MGOI).filter(([k])=>!cov.has(k));if(!miss.length)return '';
     return `<section class="card stack"><h3>In the ID mapping but not asked yet</h3><p class="small muted">These requirements have a GoI ID but no applicability or assurance question maps to them, so they are never in an assessment. Map a question to each to bring it into scope.</p>
     <div class="tw"><table><thead><tr><th>ID</th><th>Requirement</th><th>Title</th></tr></thead><tbody>${miss.map(([k,g])=>{const [n,r]=k.split('/');return `<tr class="dim"><td class="mono nowrap">${esc(g.id)}</td><td class="mono nowrap">${esc((['2.2','2.4','2.13','3.2','3.10','3.11','3.12','3.13','3.14'].includes(n)?'EDR ':'CR ')+n+(+r?' RE('+r+')':''))}</td><td>${esc(g.t)}</td></tr>`;}).join('')}</tbody></table></div></section>`;})()}`;}
@@ -1884,24 +1885,26 @@ function mapViewFlat(){
    ================================================================ */
 /* ================================================================
    CONSUMER IoT — universal questionnaire, two standards
-   Source: Consumer_updated.xlsx (sheets: standard selection, Applicable to Assurance, Level Requirements, Initial Assesment).
+   Source: IoT_Consumer_Updated1.xlsx (sheets: standard selection, Applicable to Assurance, Level Requirements, Initial Assesment).
    One question bank (A38–A54, Q110–Q135). Each question carries two mappings:
-     isvs — OWASP ISVS GoI IDs (Levels 1–3, cumulative; level per ID from the Level Requirements sheet and the per-question level column)
+     isvs — OWASP ISVS GoI IDs (Levels 1–3, independent: the Level Requirements sheet lists each level's IDs)
      er   — Essential Requirements GoI IDs (no levels)
    A question marked "Not relevant to ISVS" / "Not relevant to ER" in the sheet is not asked under that standard.
    GoI IDs are stored as P-C-NN-NNN (e.g. N-D-04-001) and shown as GoI-N-D.04.001.
    ================================================================ */
 const CONS_STD='isvs',CONS_ER_STD='er';
-/* first level at which each OWASP ISVS GoI ID applies (levels are cumulative).
-   GoI-I-C.01.006 is Level 3 under Q128 but Level 2 under Q117 and in the Level Requirements sheet: Level 2 is used. */
-const CONS_LV={"I-C-01-002":2,"I-C-01-003":2,"I-C-01-006":2,"I-C-02-005":2,"I-C-03-001":2,"I-C-03-002":2,"I-C-03-004":2,"I-C-03-005":2,"I-C-03-006":3,"I-C-04-005":1,"I-C-06-001":2,"I-C-06-002":2,"I-E-01-010":3,"N-A-02-001":1,"N-A-02-002":1,"N-A-03-003":2,"N-A-03-007":2,"N-A-03-008":2,"N-A-03-009":2,"N-A-03-010":2,"N-A-03-011":2,"N-A-04-001":2,"N-A-04-002":2,"N-A-04-003":2,"N-A-04-004":2,"N-B-01-001":1,"N-B-01-002":1,"N-B-01-003":1,"N-B-01-004":1,"N-B-01-005":1,"N-B-01-006":1,"N-B-01-008":1,"N-B-01-009":1,"N-B-01-011":3,"N-B-03-001":1,"N-B-03-002":1,"N-B-03-003":1,"N-C-02-002":1,"N-C-02-003":1,"N-C-02-004":1,"N-C-04-002":1,"N-C-04-005":1,"N-C-04-006":3,"N-C-04-012":1,"N-D-01-001":1,"N-D-01-002":1,"N-D-01-003":1,"N-D-01-004":2,"N-D-03-001":1,"N-D-03-002":1,"N-D-03-003":1,"N-D-03-004":1,"N-D-03-005":1,"N-D-03-006":1,"N-D-04-001":1,"N-D-04-002":1,"N-D-04-003":1,"N-D-04-004":1,"N-D-05-002":1,"R-E-01-001":2,"R-E-01-002":2,"R-E-01-005":2,"R-E-01-006":2,"R-E-01-011":3};
+/* OWASP ISVS levels are independent (sheet: "all levels are independent"): each GoI ID lists the levels whose
+   Level Requirements column contains it. An ID mapped to a question but absent from every level list is not assessed under ISVS. */
+const CONS_LVS={"I-C-01-002":[2,3],"I-C-01-003":[2,3],"I-C-01-006":[2,3],"I-C-02-005":[2,3],"I-C-03-001":[2,3],"I-C-03-002":[2,3],"I-C-03-004":[2,3],"I-C-03-005":[2,3],"I-C-03-006":[3],"I-C-04-005":[1,2,3],"I-C-06-001":[2,3],"I-C-06-002":[2,3],"I-E-01-010":[3],"N-A-02-002":[1,2,3],"N-A-03-003":[2,3],"N-A-03-007":[2,3],"N-A-03-008":[2,3],"N-A-03-009":[2,3],"N-A-03-010":[2,3],"N-A-03-011":[2,3],"N-A-04-001":[2,3],"N-A-04-002":[2,3],"N-A-04-003":[2,3],"N-A-04-004":[2,3],"N-B-01-002":[1,2,3],"N-B-01-003":[1,2,3],"N-B-01-004":[1,2,3],"N-B-01-005":[1,2,3],"N-B-01-006":[1,2,3],"N-B-01-008":[1,2,3],"N-B-01-009":[1,2,3],"N-B-01-011":[3],"N-B-03-001":[1,2,3],"N-B-03-002":[1,2,3],"N-C-02-002":[1,2,3],"N-C-02-003":[1,2,3],"N-C-02-004":[1,2,3],"N-C-04-002":[1,2,3],"N-C-04-006":[3],"N-C-04-012":[1,2,3],"N-D-01-001":[1,2,3],"N-D-01-002":[1,2,3],"N-D-01-003":[1,2,3],"N-D-01-004":[2,3],"N-D-03-001":[1,2,3],"N-D-03-002":[1,2,3],"N-D-03-003":[1,2,3],"N-D-03-004":[1,2,3],"N-D-03-005":[1,2,3],"N-D-03-006":[1,2,3],"N-D-04-001":[1,2,3],"N-D-04-002":[1,2,3],"N-D-04-003":[1,2,3],"N-D-04-004":[1,2,3],"N-D-05-002":[1,2,3],"R-E-01-001":[2,3],"R-E-01-002":[2,3],"R-E-01-005":[2,3],"R-E-01-006":[2,3],"R-E-01-011":[3]};
+const CONS_LV=Object.fromEntries(Object.entries(CONS_LVS).map(([k,v])=>[k,Math.min(...v)]));
 const CONS_LEVEL_DESC={
-  1:'Baseline for every consumer IoT device: communication protocols, user and device authentication, authorization, decommissioning, privacy, cryptography, SBOM, network services, secure updates and boot integrity.',
-  2:'Adds the secure development lifecycle (SDLC / SPDF), source code review, security event logging, debug and serial interface protection, sensitive-data handling, OS hardening and hardware design review.',
-  3:'Adds the most demanding authentication, update, OS and hardware requirements on top of Level 2, for devices where a compromise would be critical.'};
+  1:'Baseline requirement set: communication protocols, user and device authentication, authorization, decommissioning, privacy, cryptography, SBOM, network services, secure updates and boot integrity.',
+  2:'The Level 1 set plus the secure development lifecycle (SDLC / SPDF), source code review, security event logging, debug and serial interface protection, sensitive-data handling, OS hardening and hardware design review.',
+  3:'The Level 2 set plus the most demanding authentication, update, OS and hardware requirements, for devices where a compromise would be critical.'};
 const consDot=n=>{const [p,c,a,b]=String(n).split('-');return `GoI-${p}-${c}.${a}.${b}`;};
 const consIds=s=>String(s||'').trim().split(/\s+/).filter(Boolean);
-function parseConsIds(s){return consIds(s).filter(k=>CONS_LV[k]).map(num=>({pre:'',num,re:0,sl:CONS_LV[num]}));}
+function parseConsIds(s){return consIds(s).filter(k=>CONS_LVS[k]).map(num=>({pre:'',num,re:0,sl:CONS_LV[num],lvs:CONS_LVS[num]}));}
+const consQlvs=s=>[...new Set(parseConsIds(s).flatMap(c=>c.lvs))].sort();
 function parseConsErIds(s){return consIds(s).map(num=>({pre:'',num,re:0,sl:1}));}
 const consSort=e=>{const [p,c,a,b]=String(e.num).split('-');return c.charCodeAt(0)*1e7+(+a)*1e4+(+b)*10+'NIR'.indexOf(p);};
 const consQsl=s=>{const l=parseConsIds(s).map(c=>c.sl);return l.length?Math.min(...l):1;};
@@ -2019,26 +2022,26 @@ const CONS_QB=[
   parts:[Fi('doc','Supply chain lifecycle risk documentation (PDF)')]},
  {id:'Q133',isvs:'N-B-01-001 N-B-01-002',er:null,t:'How does the device uniquely identify each human user?',hint:'Select all applicable attributes, then give details.',
   parts:[Mu('sel',['Username','User ID','Email address','Biometric']),Tx('details','Details of the selected attribute(s)',{area:1})]},
- {id:'Q134',isvs:'N-B-01-005 N-B-01-006',er:null,t:'What is / are the user authentication method(s) implemented in the device?',hint:'Linked to Q133. Select all that apply.',
+ {id:'Q134',isvs:'N-B-01-005 N-B-01-006',er:null,t:'What is / are the user authentication method(s) implemented in the device?',hint:'Select all that apply.',
   parts:[Mu('sel',['Password/Passkey','OTP','Biometric'],{other:'Specify other method',none:'None'})]},
  {id:'Q135',isvs:null,er:'I-E-01-013',t:'What tamper detection capabilities are implemented in the device? Provide details of the detection hardware, sensors and mechanisms used.',
   parts:[Tx('txt','Tamper detection hardware, sensors and mechanisms',{area:1})]}
 ];
-/* Navigation items: a Yes/No question with its follow-up; Q133 and Q134 are linked in the sheet */
+/* Navigation items: a Yes/No question with its follow-up */
 const CONS_ITEMS_RAW=[['Q110'],['Q111'],['A38','Q112'],['A39','Q113'],['A40','Q114'],['A41','Q115'],['A42','Q116'],['A43','Q117'],['A44','Q118'],['A45','Q119'],['A46','Q120'],['A47','Q121'],['A48','Q122'],['A49','Q123'],['A50','Q124'],['A51','Q125'],['A52','Q126'],['A53','Q127'],['A54','Q128'],
-  ['Q129'],['Q130'],['Q131'],['Q132'],['Q133','Q134'],['Q135']];
+  ['Q129'],['Q130'],['Q131'],['Q132'],['Q133'],['Q134'],['Q135']];
 /* Build the question set for one standard: keep the questions relevant to it, with its mapping as cr */
 function consSet(std){
   const er=std===CONS_ER_STD;
-  const qs=CONS_QB.filter(q=>(er?q.er:q.isvs)!=null).map(q=>Object.assign({},q,{cr:(er?q.er:q.isvs)||''})).map(q=>Object.assign({sl:er?1:consQsl(q.cr)},q));
-  const gates=CONS_GATES_RAW.filter(([id])=>qs.some(q=>q.gate===id)).map(([id,q])=>{const f=qs.find(x=>x.gate===id);return {id,q,cr:'',sl:f?f.sl:1};});
+  const qs=CONS_QB.filter(q=>(er?q.er:q.isvs)!=null).map(q=>Object.assign({},q,{cr:(er?q.er:q.isvs)||''})).map(q=>er?Object.assign({sl:1},q):Object.assign({sl:consQsl(q.cr),lvs:consQlvs(q.cr)},q));
+  const gates=CONS_GATES_RAW.filter(([id])=>qs.some(q=>q.gate===id)).map(([id,q])=>{const f=qs.find(x=>x.gate===id);return Object.assign({id,q,cr:'',sl:f?f.sl:1},er||!f?{}:{lvs:f.lvs});});
   const known=new Set([...qs.map(q=>q.id),...gates.map(g=>g.id)]);
   const items=CONS_ITEMS_RAW.map(ids=>ids.filter(id=>known.has(id))).filter(ids=>ids.length).map(ids=>({id:ids[0],ids}));
   return {qs,gates,items};}
 const CONS_ISVS=consSet(CONS_STD),CONS_ER=consSet(CONS_ER_STD);
 const CONS_Q=CONS_ISVS.qs,CONS_GATES=CONS_ISVS.gates,CONS_ITEMS=CONS_ISVS.items;
 /* Firmware & software uploaded at registration (Step 1, first row of the sheet) */
-const CONS_ALWAYS=[{pre:'',num:'I-C-02-005',re:0,sl:CONS_LV['I-C-02-005']},{pre:'',num:'N-A-03-003',re:0,sl:CONS_LV['N-A-03-003']}];
+const CONS_ALWAYS=['I-C-02-005','N-A-03-003'].filter(k=>CONS_LVS[k]).map(num=>({pre:'',num,re:0,sl:CONS_LV[num],lvs:CONS_LVS[num]}));
 const CONS_ER_ALWAYS=[{pre:'',num:'N-A-03-003',re:0,sl:1}];
 const CONS_SECRET_PARTS=[['Q111','wifi'],['Q114','cred']];
 
@@ -2175,12 +2178,12 @@ const PROF={
     contact:a=>(a.dev||{}).rep||'',levelLabel:a=>'',
     reportKV:a=>{const m=a.dev||{};return [['Make',m.make],['Type / variants',m.typedesc],['Vehicle category',(m.cats||[]).join(', ')],['Country',m.country]];},
     devCard:(app,locked)=>autoDevCard(app,locked)},
-  consumer:{key:'consumer',std:CONS_STD,idPrefix:'CON',levels:true,idLevels:true,store:CONS_STORE,
+  consumer:{key:'consumer',std:CONS_STD,idPrefix:'CON',levels:true,idLevels:true,indepLevels:true,store:CONS_STORE,
     steps:[['details','Device details'],['sl','Level'],['quest','Questionnaire'],['review','Review & submit']],
     gates:CONS_GATES,qs:CONS_Q,items:CONS_ITEMS,always:CONS_ALWAYS,uploads:CONS_UPLOADS,secretFields:['defc','root','boot'],secretParts:CONS_SECRET_PARTS,
     parse:parseConsIds,labelOf:c=>consDot(c.num),sortKey:consSort,idOf:e=>consDot(e.num),titleOf:e=>'',refOf:e=>'',hasRef:false,reqWord:'Requirement',untitled:'',objInList:true,
     groups:'ABCDE'.split(''),groupOf:e=>String(e.num).split('-')[1],groupName:g=>'Category '+g,groupWord:'Category',
-    alwaysLabel:'Registration · firmware',alwaysNote:'Mapped to the firmware and software uploaded at registration (Step 1); it applies to every device at the declared level.',objWord:'Objective statement',
+    alwaysLabel:'Registration · firmware',alwaysNote:'Mapped to the firmware and software uploaded at registration (Step 1); it applies to every device at the levels that list it.',objWord:'Objective statement',
     levelList:[1,2,3],lvlShort:'Level',lvlBig:'Level',levelWord:'Level',levelDesc:CONS_LEVEL_DESC,
     mapSim:{},mapSimNote:'Q113 follows A39 whichever way it is answered.',
     mapNote:'From the OWASP-ISVS column of the questionnaire',idExample:'GoI-N-D.04.001',
