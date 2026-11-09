@@ -670,8 +670,9 @@ function domainView(){
       <p class="lead">Choose the domain your product belongs to, then the standard you want to be assessed against. You will be taken to the vendor workspace for that standard to submit your component.</p>
     </div>
     <div class="figs">
-      <div class="fig"><b>4</b><span>domains: ICS, Medical, Automotive, Consumer IoT</span></div>
-      <div class="fig"><b>3 live</b><span>standards: IEC 62443-4-2 · IEC TR 60601-4-5 · AIS 189</span></div>
+      ${(()=>{const ds=Object.values(DOMAINS),live=ds.filter(d=>d.live),st=ds.flatMap(d=>d.standards.filter(x=>x.live));
+        return `<div class="fig"><b>${live.length===ds.length?ds.length+' live':live.length+' of '+ds.length+' live'}</b><span>domains: ${ds.map(d=>esc(d.short)).join(', ')}</span></div>
+      <div class="fig"><b>${st.length}</b><span>standards: ${st.map(x=>esc(x.code)).join(' · ')}</span></div>`;})()}
       <div class="fig"><b>3 roles</b><span>vendor submits, tester assesses, administrator oversees</span></div>
       <div class="fig"><b>Report</b><span>compliance report per requirement</span></div>
     </div>
