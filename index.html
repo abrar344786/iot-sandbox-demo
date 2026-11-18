@@ -568,6 +568,14 @@ footer{border-top:1px solid var(--line);margin-top:8px}
 .prep-i input:checked+span{color:var(--ink-2);text-decoration:line-through;text-decoration-color:var(--ink-2)}
 @media (max-width:1100px){.domains{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media (max-width:760px){.domains,.sd-two,.dash-tiles{grid-template-columns:1fr}}
+
+.linkish{all:unset;cursor:pointer;color:var(--accent);font-family:var(--f-mono);font-size:13px;text-decoration:underline;text-decoration-color:color-mix(in srgb,var(--accent) 45%,transparent);text-underline-offset:3px}
+.linkish:hover{text-decoration-color:var(--accent)}
+.linkish:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:2px}
+.sd-modal{position:fixed;inset:0;z-index:800;background:rgba(10,18,22,.55);display:flex;justify-content:center;align-items:flex-start;padding:28px 16px;overflow:auto}
+.sd-panel{background:var(--bg,#EEF1F0);border:1px solid var(--line);border-radius:var(--r);width:min(1120px,100%);padding:20px 24px 24px;box-shadow:0 18px 50px rgba(0,0,0,.3)}
+.sd-panel .hero{align-items:start}
+.sd-mh{margin-bottom:6px;position:sticky;top:-28px;background:inherit;padding:8px 0;z-index:1}
 </style>
 </head>
 <body>
@@ -683,7 +691,7 @@ function header(){
     <button class="brand" data-a="home" aria-label="IoT Security Sandbox home"><span class="mark">C-DAC</span>
       <span><span class="brand-t">IoT Security Sandbox</span><span class="brand-s">C-DAC Hyderabad</span></span></button>
     ${medNav()}
-    ${S.view==='ics'?'<div id="ics-hdr" class="ics-hdr" data-ics></div>':`<div class="top-r">${inMed()?(MStore.mode==='shared'?'<span class="mode"><b>●</b> Shared workspace</span>':MStore.mode==='local'?'<span class="mode">Local demo</span>':'<span class="mode">Connecting…</span>'):''}${inMed()?(S.mrole?`<span class="role-chip">${MROLES[S.mrole]}</span><button class="signout" data-a="m-signout">Sign out</button>`:''):'<span class="role-chip">'+({vendor:'Vendor / OEM',tester:'Tester',admin:'Administrator'}[window.__sbxRole]||'Vendor / OEM')+'</span>'}</div>`}
+    ${S.view==='ics'?'<div id="ics-hdr" class="ics-hdr" data-ics></div>':`<div class="top-r">${inMed()?(MStore.mode==='shared'?'<span class="mode"><b>●</b> Shared workspace</span>':MStore.mode==='local'?'<span class="mode">Local demo</span>':'<span class="mode">Connecting…</span>'):''}${inMed()?(S.mrole?`<span class="role-chip">${MROLES[S.mrole]}</span><button class="signout" data-a="m-signout">Sign out</button>`:''):'<span class="role-chip">'+({vendor:'Vendor / OEM',tester:'Tester',admin:'Administrator'}[homeRole()]||'Vendor / OEM')+'</span>'}</div>`}
   </div></header>`;
 }
 function stepper(){
@@ -752,16 +760,16 @@ const STD_DESC={
     start:'You will be taken to the IEC 62443-4-2 vendor workspace to submit your component.'}
 };
 
-function stdDescription(d,s){
+function stdDescription(d,s,staffPk){
   const D=STD_DESC[s.id];
-  const startBtn=`<button class="btn primary" data-a="next-std">Start assessment →</button>`;
+  const startBtn=staffPk?`<button class="btn primary" data-a="dash-portal" data-p="${staffPk}">Open tester workspace →</button>`:S.info?`<button class="btn primary" data-a="std-start" data-d="${d.key}" data-s="${esc(s.id)}">Start assessment →</button>`:`<button class="btn primary" data-a="next-std">Start assessment →</button>`;
   if(!D)return `<section class="card stack sdesc" id="std-desc">
       <div class="row between" style="align-items:flex-start;gap:16px;flex-wrap:wrap"><div class="stack" style="gap:6px"><span class="eyebrow">${esc(d.name)} · Selected standard</span><h2>${esc(s.code)}</h2><p class="muted">${esc(s.name)}</p></div>${startBtn}</div>
       <div class="sd-meta">${s.meta.map(([k,v])=>`<span>${esc(k)}: <b>${esc(v)}</b></span>`).join('')}</div>
       <p class="small muted">A full description of this standard will be added once the ${esc(d.short)} team provides it.</p></section>`;
   return `<section class="stack sdesc" id="std-desc" style="gap:22px">
     <div class="hero"><div class="stack" style="gap:10px"><span class="eyebrow">${esc(d.name)} · ${esc(s.code)}</span><h2 class="sd-title">${esc(D.title)}</h2>
-      <p class="lead">Your product is in the ${esc(d.name)} domain and the standard is ${esc(s.code)}. Start the assessment to open the vendor workspace and submit your component.</p></div>
+      <p class="lead">${staffPk?`Applications in the ${esc(d.name)} domain are assessed against ${esc(s.code)}. The tester checks each applicable requirement and records a verdict with a justification.`:`Your product is in the ${esc(d.name)} domain and the standard is ${esc(s.code)}. Start the assessment to open the vendor workspace and submit your component.`}</p></div>
       <div class="figs">${D.stats.map(([b,t])=>`<div class="fig"><b>${esc(b)}</b><span>${esc(t)}</span></div>`).join('')}</div></div>
     <div class="sd-two"><div class="stack" style="gap:10px"><span class="eyebrow">Assessment overview</span>${D.overview.map(p=>`<p>${esc(p)}</p>`).join('')}</div>
       <div class="card"><h3>What the assessment covers</h3><ul class="sd-list">${D.covers.map(x=>`<li>${esc(x)}</li>`).join('')}</ul></div></div>
@@ -771,7 +779,7 @@ function stdDescription(d,s){
       <div class="sd-grid">${D.levels.map(([t,p])=>`<div class="card"><span class="sd-tag">${esc(t)}</span><p class="small" style="margin-top:8px">${esc(p)}</p></div>`).join('')}</div></div>
     <div class="stack" style="gap:12px"><span class="eyebrow">How it works</span><h3>Assessment workflow</h3>
       <ol class="sd-steps">${D.workflow.map(([h,p,o],i)=>`<li class="card"><span class="sd-n">0${i+1}</span><div class="stack" style="gap:4px"><h4>${esc(h)}</h4><p class="small muted">${esc(p)}</p><span class="sd-out">${esc(o)}</span></div></li>`).join('')}</ol></div>
-    <div class="bar"><span class="small muted">${esc(D.start)}</span>${startBtn}</div>
+    <div class="bar"><span class="small muted">${staffPk?'Opens the tester workspace for '+esc(s.code)+'.':esc(D.start)}</span>${startBtn}</div>
   </section>`;
 }
 
@@ -783,13 +791,13 @@ function dashRows(){
   DASH_PROFILES.forEach(([dk,pk])=>{
     const d=DOMAINS[dk];
     if(!pk){const I=window.__ICS&&window.__ICS.list?window.__ICS.list():null;if(!I){ready=false;return;}if(!I.ready)ready=false;
-      I.apps.forEach(a=>rows.push(Object.assign({dk,pk:'ics',domain:d.short,std:d.standards[0].code},a)));return;}
+      I.apps.forEach(a=>rows.push(Object.assign({dk,pk:'ics',domain:d.short,std:d.standards[0].code,sid:d.standards[0].id},a)));return;}
     const n=PROF[pk],st=n.store,stdc=(d.standards.find(x=>x.id===n.std)||{}).code||'';
     if(!st.ready)ready=false;
     Object.values(st.apps||{}).forEach(a=>{if(!a||!a.id)return;
       const s=st.asmts[a.id];
       const k=a.status!=='submitted'?'draft':s&&s.status==='completed'?'ok':s&&Object.keys(s.verdicts||{}).length?'prog':'open';
-      rows.push({dk,pk,domain:d.short,std:stdc,id:a.id,name:n.devName(a)||'Untitled',org:n.devVendor(a)||'',k,
+      rows.push({dk,pk,domain:d.short,std:stdc,sid:n.std,id:a.id,name:n.devName(a)||'Untitled',org:n.devVendor(a)||'',k,
         mine:st.mode!=='shared'||a.createdBy===st.me.id,updatedAt:a.updatedAt||a.createdAt||'',submittedAt:a.submittedAt||''});});
   });
   return {rows,ready};}
@@ -802,7 +810,7 @@ function dashboard(){
   const pill=k=>`<span class="pill ${k}">${DASH_T[k]}</span>`;
   const open=(r,m,label,cls)=>`<button class="btn ${cls||'sm'}" data-a="dash-open" data-p="${r.pk}" data-id="${esc(r.id)}" data-m="${m}">${label}</button>`;
   const table=(list,act,empty)=>list.length?`<div class="tw"><table><thead><tr><th>Domain · standard</th><th>Device / component</th><th>ID</th><th>Status</th><th>Updated</th><th></th></tr></thead><tbody>
-      ${list.map(r=>`<tr><td><b>${esc(r.domain)}</b> <span class="muted small">· ${esc(r.std)}</span></td><td>${esc(r.name)}${r.org&&role!=='vendor'?`<div class="small muted">${esc(r.org)}</div>`:''}</td><td class="mono small">${esc(r.id)}</td><td>${pill(r.k)}</td><td class="small muted">${fmtDate(r.updatedAt)}</td><td class="num">${act(r)}</td></tr>`).join('')}</tbody></table></div>`
+      ${list.map(r=>`<tr><td><b>${esc(r.domain)}</b> <span class="muted small">·</span> ${stdLink(r.dk,r.sid,r.std)}</td><td>${esc(r.name)}${r.org&&role!=='vendor'?`<div class="small muted">${esc(r.org)}</div>`:''}</td><td class="mono small">${esc(r.id)}</td><td>${pill(r.k)}</td><td class="small muted">${fmtDate(r.updatedAt)}</td><td class="num">${act(r)}</td></tr>`).join('')}</tbody></table></div>`
     :`<div class="card empty"><p>${empty}</p></div>`;
   const loading=!ready&&!rows.length?`<p class="small muted">Loading applications…</p>`:'';
   if(role==='vendor'){
@@ -816,18 +824,44 @@ function dashboard(){
   const subs=rows.filter(r=>r.k!=='draft');
   const queue=subs.filter(r=>r.k==='open'||r.k==='prog').sort((a,b)=>(a.submittedAt||a.updatedAt||'').localeCompare(b.submittedAt||b.updatedAt||''));
   const done=subs.filter(r=>r.k==='ok').sort((a,b)=>(b.updatedAt||'').localeCompare(a.updatedAt||''));
-  const per=DASH_PROFILES.map(([dk,pk])=>{const k=pk||'ics';const l=subs.filter(r=>r.pk===k);return {label:DOMAINS[dk].short+(pk&&pk.startsWith('consumer')?' · '+(pk==='consumer_er'?'ER':'ISVS'):''),o:l.filter(r=>r.k==='open').length,p:l.filter(r=>r.k==='prog').length,c:l.filter(r=>r.k==='ok').length};});
+  const per=DASH_PROFILES.map(([dk,pk])=>{const k=pk||'ics';const l=subs.filter(r=>r.pk===k);const sd=pk?DOMAINS[dk].standards.find(x=>x.id===PROF[pk].std):DOMAINS[dk].standards[0];
+    return {dk,pk:k,sid:sd.id,code:sd.code,domain:DOMAINS[dk].short,o:l.filter(r=>r.k==='open').length,p:l.filter(r=>r.k==='prog').length,c:l.filter(r=>r.k==='ok').length};});
   return `<section class="stack dash" style="gap:12px">
     <div class="section-h"><div class="stack" style="gap:2px"><span class="eyebrow">${role==='admin'?'Administrator':'Tester'}</span><h3>Assessment queue</h3></div>${pick}</div>
     <div class="dash-tiles">${[['open','Awaiting assessment',queue.filter(r=>r.k==='open').length],['prog','In assessment',queue.filter(r=>r.k==='prog').length],['ok','Reports issued',done.length],['all','Submitted in total',subs.length]].map(([k,t,n])=>`<div class="fig"><b>${n}</b><span>${t}</span></div>`).join('')}</div>
-    <div class="tw"><table class="dash-per"><thead><tr><th>Domain · standard</th><th class="num">Awaiting</th><th class="num">In assessment</th><th class="num">Reports issued</th></tr></thead><tbody>
-      ${per.map(x=>`<tr><td>${esc(x.label)}</td><td class="num">${x.o}</td><td class="num">${x.p}</td><td class="num">${x.c}</td></tr>`).join('')}</tbody></table></div>
+    <div class="tw"><table class="dash-per"><thead><tr><th>Domain · standard</th><th class="num">Awaiting</th><th class="num">In assessment</th><th class="num">Reports issued</th><th></th></tr></thead><tbody>
+      ${per.map(x=>`<tr><td><b>${esc(x.domain)}</b> <span class="muted small">·</span> ${stdLink(x.dk,x.sid,x.code)}</td><td class="num">${x.o}</td><td class="num">${x.p}</td><td class="num">${x.c}</td><td class="num"><button class="btn sm quiet" data-a="dash-portal" data-p="${x.pk}">Open →</button></td></tr>`).join('')}</tbody></table></div>
+    <p class="small muted">Click a standard to read its description. Open takes you to that portal's tester workspace (applications, requirement map, settings).</p>
     <h4>To assess</h4>
     ${loading||table(queue,r=>open(r,'t',r.k==='open'?'Start →':'Continue →','sm primary'),'Nothing waiting. New submissions from vendors appear here.')}
     ${done.length?`<details class="dash-done"><summary>Reports issued (${done.length})</summary>${table(done.slice(0,50),r=>open(r,'t','Open'),'')}</details>`:''}
   </section>`;}
 
+const stdLink=(dk,sid,code)=>`<button class="linkish" data-a="std-info" data-d="${dk}" data-s="${esc(sid)}" title="Read the description of ${esc(code)}">${esc(code)}</button>`;
+const isStaff=()=>{const r=homeRole();return r==='tester'||r==='admin';};
+const pkOf=(dk,sid)=>dk==='ics'?'ics':dk==='consumer'&&sid===CONS_ER_STD?'consumer_er':dk;
+function stdInfoModal(){
+  const d=DOMAINS[S.info.d],s=d&&d.standards.find(x=>x.id===S.info.s);if(!s)return '';
+  return `<div class="sd-modal" role="dialog" aria-modal="true" aria-label="${esc(s.code)} description" data-a="std-info-close" data-self="1">
+    <div class="sd-panel"><div class="row end sd-mh"><button class="btn sm quiet" data-a="std-info-close" id="sd-close" aria-label="Close">Close ✕</button></div>
+    ${stdDescription(d,s,isStaff()?pkOf(d.key,s.id):null)}</div></div>`;}
 function domainView(){
+  if(isStaff())return `
+  <section class="hero">
+    <div class="stack">
+      <div class="eyebrow">IoT Security Sandbox · C-DAC Hyderabad · ${homeRole()==='admin'?'Administrator':'Tester'}</div>
+      <h1>Assess submitted devices against the standard that applies to their sector</h1>
+      <p class="lead">Every submission from every domain arrives in the queue below. Open one to assess it, or click a standard to read its description.</p>
+    </div>
+    <div class="figs">
+      <div class="fig"><b>${Object.values(DOMAINS).length}</b><span>domains: ${Object.values(DOMAINS).map(x=>esc(x.short)).join(', ')}</span></div>
+      <div class="fig"><b>${Object.values(DOMAINS).flatMap(x=>x.standards.filter(y=>y.live)).length}</b><span>standards: ${Object.values(DOMAINS).flatMap(x=>x.standards.filter(y=>y.live)).map(x=>esc(x.code)).join(' · ')}</span></div>
+      <div class="fig"><b>Verdict</b><span>pass or fail with a justification, per requirement</span></div>
+      <div class="fig"><b>Report</b><span>compliance report per requirement</span></div>
+    </div>
+  </section>
+  ${dashboard()}
+  ${S.info?stdInfoModal():''}`;
   const cards=Object.values(DOMAINS).map(d=>{
     const sel=S.domain===d.key;
     return `<div class="dcard" role="group" aria-label="${esc(d.name)}" data-sel="${sel}">
@@ -864,7 +898,8 @@ function domainView(){
     ${s?'':`<div class="bar"><span class="small muted">${d?`Selected: <b style="color:var(--ink)">${esc(d.name)}</b> · now choose a standard.`:'Select a domain and a standard to continue.'}</span><button class="btn primary" disabled>Start assessment →</button></div>`}
   </section>
   ${s?stdDescription(d,s):''}
-  ${howItWorks()}`;
+  ${howItWorks()}
+  ${S.info?stdInfoModal():''}`;
 }
 
 /* ---------- vendor "Before you start" checklist (flow portals) ---------- */
@@ -2482,7 +2517,14 @@ const A={
   home(){S.std=null;if(window.__ICS)window.__ICS.reset();go('');},
   'pick-domain'(el){const k=el.dataset.d;if(S.domain!==k){S.domain=k;S.std=null;}const d=DOMAINS[k];if(d.standards.length===1)S.std=d.standards[0].id;render();},
   'pick-std-home'(el){const k=el.dataset.d;S.domain=k;S.std=el.dataset.s;render();const t=document.getElementById('std-desc');if(t)try{t.scrollIntoView({behavior:'smooth',block:'start'});}catch(e){}},
-  'dash-role'(el){ls.set('iotsbx.home.role',el.dataset.r);render();},
+  'dash-role'(el){ls.set('iotsbx.home.role',el.dataset.r);S.info=null;render();},
+  'std-info'(el){S.info={d:el.dataset.d,s:el.dataset.s};render();const c=document.getElementById('sd-close');if(c)c.focus();},
+  'std-info-close'(el,e){if(el.dataset.self&&e&&e.target!==el)return;S.info=null;render();},
+  'std-start'(el){S.info=null;S.domain=el.dataset.d;S.std=el.dataset.s;A['next-std']();},
+  'dash-portal'(el){const pk=el.dataset.p,r=homeRole()==='admin'?'admin':'tester';S.info=null;
+    if(pk==='ics'){S.domain='ics';S.std='62443-4-2';if(window.__ICS&&window.__ICS.enterAs)window.__ICS.enterAs(r);go('ics-portal');return;}
+    const n=PROF[pk],dk=n.key;S.domain=dk;S.std=n.std;if(dk==='consumer')ls.set('iotsbx.consumer.std',n.std);
+    useProfile(pk);setMRole(r);S.tapp=null;S.app=null;go(dk+'-portal');},
   'dash-open'(el){const pk=el.dataset.p,id=el.dataset.id,m=el.dataset.m,hr=homeRole()||'vendor';
     const r=hr==='admin'?'admin':m==='t'?'tester':'vendor';
     if(pk==='ics'){S.domain='ics';S.std='62443-4-2';if(window.__ICS&&window.__ICS.open)window.__ICS.open(id,r,m);go('ics-portal');return;}
@@ -2622,6 +2664,7 @@ root.addEventListener('dragleave',e=>{const d=dropZone(e);if(d)d.classList.remov
 root.addEventListener('drop',e=>{const d=dropZone(e);if(!d||!S.app)return;e.preventDefault();d.classList.remove('over');const f=e.dataTransfer&&e.dataTransfer.files[0];if(!f)return;
   if(d.dataset.drop)addFile(d.dataset.drop,f);else{const [q,k]=d.dataset.qdrop.split('|');addQFile(q,k,f);}});
 root.addEventListener('keydown',e=>{
+  if(e.key==='Escape'&&S.info){S.info=null;render();return;}
   if(e.target.closest&&e.target.closest('[data-ics]'))return;
   const el=e.target.closest('[role="button"][data-a]');
   if(el&&(e.key==='Enter'||e.key===' ')&&A[el.dataset.a]){e.preventDefault();A[el.dataset.a](el);}
@@ -3192,6 +3235,7 @@ window.__ICS={
   reset(){if(S.role)S.view='home';S.draft=null;S.confirm=null;},
   list(){return {ready:!!Store.appsReady,apps:Object.entries(Store.apps).map(([id,a])=>{const st=appStatus(a,Store.asmts[id]);const m=a.meta||{};
     return {id,name:m.component||'Untitled component',org:m.vendor||'',k:st.k==='done'?'ok':st.k,mine:Store.mode!=='shared'||a.createdBy===Store.me.id,updatedAt:a.updatedAt||a.createdAt||'',submittedAt:a.submittedAt||''};})};},
+  enterAs(role){ls.set('gn62443.role',role);setRole(role);S.confirm=null;S.draft=null;if(S.role==='admin'){S.act='tester';ls.set('gn62443.act','tester');}S.view=S.role==='admin'?'home':'apps';},
   open(id,role,m){ls.set('gn62443.role',role);setRole(role);S.confirm=null;S.draft=null;
     if(m==='t'){if(S.role==='admin'){S.act='tester';ls.set('gn62443.act','tester');}S.appId=id;S.view='tester';S.reqId=null;S.vd={};S.editObj=null;}
     else if(m==='r'){S.appId=id;S.view='report';}
