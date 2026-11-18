@@ -519,6 +519,55 @@ footer{border-top:1px solid var(--line);margin-top:8px}
   .brand-s{display:none}
 }
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+
+/* home: domain cards with standard radios, dashboard, standard description, checklist */
+.dcard{cursor:default;padding:0;gap:0}
+.dcard:hover{border-color:var(--line)}
+.dcard[data-sel="true"]{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
+.dcard .dc-hd{all:unset;box-sizing:border-box;cursor:pointer;display:flex;flex-direction:column;gap:12px;padding:22px 22px 14px;border-radius:var(--r) var(--r) 0 0}
+.dcard .dc-hd:hover h2{text-decoration:underline}
+.dcard .dc-hd:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+.dcard .dc-hd .hd{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.dcard .dc-hd .ex{display:block}
+.dcard[data-sel="true"] .dc-hd{background:var(--accent-soft)}
+.dcard[data-sel="true"] .ic{background:var(--surface)}
+.dcard .dc-stds{display:flex;flex-direction:column;gap:6px;padding:12px 22px 20px;border-top:1px solid var(--line);margin-top:auto}
+.std-r{display:flex;align-items:center;gap:10px;text-align:left;cursor:pointer;border:1px solid var(--line);background:var(--surface);border-radius:var(--r);padding:9px 12px;font-family:var(--f-mono);font-size:13px;color:var(--ink)}
+.std-r:hover{border-color:var(--ink-2)}
+.std-r:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.std-r .rb{flex:none;width:16px;height:16px;border-radius:50%;border:1.5px solid var(--ink-2)}
+.std-r[aria-checked="true"]{border-color:var(--accent);background:var(--accent-soft);box-shadow:inset 0 0 0 1px var(--accent)}
+.std-r[aria-checked="true"] .rb{border-color:var(--accent);background:radial-gradient(circle,var(--accent) 45%,transparent 50%)}
+.dash-tiles{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
+.dash h4,.sdesc h4{font-size:15px;font-weight:600}
+.dash-done summary{cursor:pointer;font-weight:500;padding:6px 0}
+.sdesc .sd-title{font-size:clamp(24px,3vw,32px);line-height:1.2}
+.sd-meta{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:13px;color:var(--ink-2)}
+.sd-two{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:28px;align-items:start}
+.sd-two p{color:var(--ink-2)}
+.sd-list{margin:8px 0 0;padding-left:18px;color:var(--ink-2)}.sd-list li{margin:6px 0}
+.sd-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px}
+.sd-fr{display:flex;flex-direction:column;gap:6px}
+.sd-fr p{color:var(--ink-2)}
+.sd-tag{align-self:flex-start;display:inline-block;font-family:var(--f-mono);font-size:12px;border:1px solid var(--accent);color:var(--accent);background:var(--accent-soft);border-radius:3px;padding:2px 8px}
+.sd-sm{font-size:12.5px;color:var(--accent);margin-top:auto}
+.sd-steps{list-style:none;margin:0;padding:0;display:grid;gap:10px}
+.sd-steps li{display:flex;gap:16px;align-items:flex-start}
+.sd-n{flex:none;font-family:var(--f-mono);font-size:13px;color:var(--accent);border:1px solid var(--accent);border-radius:4px;padding:3px 7px}
+.sd-out{font-family:var(--f-mono);font-size:12px;color:var(--accent)}
+.prep summary{cursor:pointer;list-style:none;display:flex;justify-content:space-between;align-items:center;gap:12px}
+.prep summary::-webkit-details-marker{display:none}
+.prep summary::after{content:"▾";color:var(--ink-2)}
+.prep[open] summary::after{content:"▴"}
+.prep-g{margin-top:14px}
+.prep-g.cols ul{grid-template-columns:repeat(2,minmax(0,1fr));column-gap:28px}
+@media (max-width:760px){.prep-g.cols ul{grid-template-columns:1fr}}
+.prep-g ul{list-style:none;margin:6px 0 0;padding:0;display:grid;gap:6px}
+.prep-i{display:flex;gap:10px;align-items:flex-start;font-size:14px;cursor:pointer}
+.prep-i input{margin-top:4px;accent-color:var(--accent);flex:none}
+.prep-i input:checked+span{color:var(--ink-2);text-decoration:line-through;text-decoration-color:var(--ink-2)}
+@media (max-width:1100px){.domains{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:760px){.domains,.sd-two,.dash-tiles{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
@@ -610,7 +659,7 @@ function fromHash(){
   else if(d.flow&&(m[2]==='-assess'||m[2]==='-new')){if(!S.std)S.std=d.standards[0].id;S.view=S.app?'massess':'mlanding';}
   else if(d.flow&&m[2]==='-portal'){if(!S.std)S.std=d.standards[0].id;S.view=flowStd()?'mlanding':'demo';if(S.view==='mlanding')S.app=null;}
   else if(m[2]&&!d.live){S.view='demo';if(!S.std)S.std=d.standards[0].id;}
-  else S.view='standard';
+  else S.view='domain';
 }
 function go(hash){
   const want=hash?'#'+hash:'';
@@ -644,48 +693,213 @@ function stepper(){
     {t:'Select standard',k:'standard',sub:S.std&&d?(d.standards.find(x=>x.id===S.std)||{}).code||'':''},
     {t:'Start assessment',k:'portal',sub:''}
   ];
-  const cur=S.view==='domain'?0:S.view==='standard'?1:2;
+  const cur=S.view==='domain'?(S.std?2:S.domain?1:0):S.view==='standard'?1:2;
   return `<nav class="stepper" aria-label="Steps">${steps.map((s,i)=>{
     const done=i<cur;
-    return `<div class="s ${done?'ok':i>cur?'off':''}" ${i===cur?'aria-current="step"':''} ${done?`role="button" tabindex="0" data-a="step" data-i="${i}"`:''}>
+    return `<div class="s ${done?'ok':i>cur?'off':''}" ${i===cur?'aria-current="step"':''} ${done&&S.view!=='domain'?`role="button" tabindex="0" data-a="step" data-i="${i}"`:''}>
       <span class="n">STEP ${i+1}</span><span class="t">${s.t}${done&&s.sub?` <span class="muted small">· ${esc(s.sub)}</span>`:''}</span></div>`;}).join('')}</nav>`;
 }
 
+/* ================================================================
+   HOME: dashboard, domain + standard selection, standard description
+   ================================================================ */
+/* Standard descriptions shown on the home page when a standard is selected.
+   Medical: from "IEC TR 60601-4-5 · Medical Devices" page supplied by the medical team.
+   ICS: written to the same structure (IEC TR 60601-4-5 builds on the IEC 62443-4-2 component requirements).
+   Other standards show a short summary until their teams provide the content. */
+const SL_TEXT=[['SL 1','Casual or coincidental misuse'],['SL 2','Simple means, low resources, generic skills'],['SL 3','Sophisticated means, moderate resources, IACS skills'],['SL 4','Sophisticated means, extended resources, IACS skills']];
+const STD_DESC={
+  '60601-4-5':{
+    title:'Security assessment of medical devices against IEC TR 60601-4-5',
+    stats:[['7','requirement areas, FR 1 to FR 7, from identification to resource availability'],['4','security levels, SL 1 to SL 4, set by the deployment environment'],['3 roles','vendor submits, tester assesses, administrator oversees'],['Report','compliance report per requirement']],
+    overview:['IEC TR 60601-4-5 gives technical security specifications for medical electrical equipment. It sets out the security capabilities a device should provide, grouped under seven foundational requirements and graded by security level.',
+      'Medical devices now connect to hospital networks, clinical systems and cloud services, which exposes them to risks that did not exist when they worked in isolation. Manufacturers need to show that their products can resist misuse and attack while continuing to deliver safe and effective care.',
+      'The assessment starts by settling the intended use, the healthcare environment and the security level the component is designed for. The tester then reviews the component feature by feature against the requirement areas, covering its interfaces, data flows, user roles, update mechanism and behaviour under fault or attack, and the vendor receives a clear view of where the component stands.',
+      'It is designed for vendors of connected medical electrical equipment who are preparing for market or responding to customer security requirements.'],
+    covers:['Intended use, deployment environment and target security level','Feature gap assessment across all seven requirement areas','Component type and boundary: device hardware, embedded firmware and the data exchange with connected software applications','Review of interfaces, protocols and data flows, including network, wireless and service ports','Authentication, role-based access and emergency access review','Protection of patient data and PII at rest and in transit','Software update, integrity and secure boot mechanisms','Logging, monitoring and security event reporting capability','Behaviour under fault, overload and attack, including safe state and recovery','Secure configuration and decommissioning'],
+    areas:[['FR 1','Identification and authentication','Verifies the identity of every user, device and software process before access is granted, while preserving fast access for clinicians in an emergency.','Unique accounts · Emergency access · Device certificates'],
+      ['FR 2','Use control','Limits each identity to the actions its role requires, with session controls suited to shared clinical workstations and busy care settings.','Role-based access · Session timeout · Service mode control'],
+      ['FR 3','System integrity','Protects firmware, configuration and clinical data from unauthorised or undetected modification.','Signed updates · Secure boot · Input validation'],
+      ['FR 4','Data confidentiality','Safeguards patient data and personally identifiable information (PII) at rest and in transit, including over legacy hospital networks.','Encrypted links · Key management · PII protection · Data erase on decommission'],
+      ['FR 5','Restricted data flow','Restricts communication to the interfaces, ports and services the device needs for its intended use.','Ports and services off · Allow-lists · Network segmentation support'],
+      ['FR 6','Timely response to events','Records security-relevant events and makes them available to healthcare providers and the manufacturer for review and response.','Audit log · Timestamps · Log export'],
+      ['FR 7','Resource availability','Maintains essential functions under attack or fault conditions and supports safe, controlled recovery.','Overload resistance · Safe state · Backup and restore']],
+    levelsIntro:'The target security level should be determined by the environment in which the device will be deployed and the threats it is expected to face. A realistic level that can be achieved, verified and maintained is more valuable than a higher target that cannot be delivered.',
+    levels:SL_TEXT,
+    workflow:[['Define the target','Settle intended use, deployment environment, target security level and scope.','Output: scope and target security level'],
+      ['Feature gap assessment','Check the component against each requirement area and mark it met, partial or missing, with supporting evidence.','Output: compliance report per requirement']],
+    start:'You will be taken to the vendor workspace for IEC TR 60601-4-5 to submit your component.'},
+  '62443-4-2':{
+    title:'Security assessment of industrial control system components against IEC 62443-4-2',
+    stats:[['7','requirement areas, FR 1 to FR 7, from identification to resource availability'],['4','security levels, SL 1 to SL 4, set by the threat the component must resist'],['3 roles','vendor submits, tester assesses, administrator oversees'],['Report','compliance report per requirement']],
+    overview:['IEC 62443-4-2 sets out the technical security requirements for the components that make up an industrial automation and control system (IACS). It describes the security capabilities a component should provide, grouped under seven foundational requirements and graded by security level.',
+      'Controllers, field devices and gateways that once ran on isolated plant networks are now connected to engineering workstations, enterprise systems and remote service links. Asset owners and system integrators need evidence that each component can resist misuse and attack without disturbing the process it controls.',
+      'The assessment starts by settling the component type, its role in the plant and the security level it is designed for. Ten Yes/No applicability questions (A1–A10) then filter in the requirements that apply to what the component can do, and the assurance questionnaire (Q1–Q43) collects the evidence for each one. The tester reviews every applicable requirement and records a verdict with a justification, and the vendor receives a clear view of where the component stands.',
+      'The sandbox covers embedded devices such as PLCs, RTUs, IEDs, safety controllers and industrial gateways. It is designed for vendors preparing components for market, for certification, or in response to asset-owner security requirements.'],
+    covers:['Component type, role in the plant and target security level','Applicability of each requirement through ten Yes/No questions (A1–A10)','Human user, software process and device identification and authentication, including multifactor authentication','Account, identifier, authenticator and password management','Authorization, session lock and concurrent session control','Interfaces, communication protocols, ports and wireless technologies','Firmware integrity: signed and unsigned firmware, update mechanism and secure boot','Audit logging and time sources','Cryptography, keys and protection of sensitive information','Behaviour under fault and denial of service, backup, recovery and factory reset'],
+    areas:[['FR 1','Identification and authentication control','Verifies the identity of every human user, software process and device before access is granted, on every interface that allows access.','Unique accounts · Multifactor authentication · Password strength'],
+      ['FR 2','Use control','Limits each authenticated identity to the actions its role requires, with session and mobile code controls suited to plant operation.','Authorization · Session lock · Concurrent sessions'],
+      ['FR 3','System integrity','Protects firmware, configuration and communication from unauthorised or undetected modification.','Signed firmware · Secure boot · Input validation'],
+      ['FR 4','Data confidentiality','Protects sensitive information such as credentials, keys and process know-how at rest and in transit.','Cryptography · Key protection · Information erase'],
+      ['FR 5','Restricted data flow','Restricts communication to the interfaces, ports and services the component needs, and supports segmentation of the plant network.','Unused ports off · Zone boundaries · No unintended forwarding'],
+      ['FR 6','Timely response to events','Records security-relevant events with reliable time stamps and makes them available for review and response.','Audit log · Time source · Log access'],
+      ['FR 7','Resource availability','Keeps essential functions running under denial of service and fault conditions, and supports controlled backup and recovery.','DoS protection · Essential functions · Backup and restore']],
+    levelsIntro:'The target security level should be chosen for the zone in which the component will be deployed and the threats it is expected to face. A realistic level that can be achieved, verified and maintained is more valuable than a higher target that cannot be delivered. Requirements are cumulative: a component declared at SL 3 is assessed against everything required at SL 1, 2 and 3.',
+    levels:SL_TEXT,
+    workflow:[['Define the target','Settle the component type, its boundary and the target security level.','Output: scope and target security level'],
+      ['Applicability and evidence','Answer the ten Yes/No applicability questions, then the assurance questionnaire with the documents, firmware and lists the tester needs.','Output: the set of applicable requirements, with evidence'],
+      ['Requirement assessment','The tester checks each applicable requirement and records Pass or Fail with a justification.','Output: compliance report per requirement']],
+    start:'You will be taken to the IEC 62443-4-2 vendor workspace to submit your component.'}
+};
+
+function stdDescription(d,s){
+  const D=STD_DESC[s.id];
+  const startBtn=`<button class="btn primary" data-a="next-std">Start assessment →</button>`;
+  if(!D)return `<section class="card stack sdesc" id="std-desc">
+      <div class="row between" style="align-items:flex-start;gap:16px;flex-wrap:wrap"><div class="stack" style="gap:6px"><span class="eyebrow">${esc(d.name)} · Selected standard</span><h2>${esc(s.code)}</h2><p class="muted">${esc(s.name)}</p></div>${startBtn}</div>
+      <div class="sd-meta">${s.meta.map(([k,v])=>`<span>${esc(k)}: <b>${esc(v)}</b></span>`).join('')}</div>
+      <p class="small muted">A full description of this standard will be added once the ${esc(d.short)} team provides it.</p></section>`;
+  return `<section class="stack sdesc" id="std-desc" style="gap:22px">
+    <div class="hero"><div class="stack" style="gap:10px"><span class="eyebrow">${esc(d.name)} · ${esc(s.code)}</span><h2 class="sd-title">${esc(D.title)}</h2>
+      <p class="lead">Your product is in the ${esc(d.name)} domain and the standard is ${esc(s.code)}. Start the assessment to open the vendor workspace and submit your component.</p></div>
+      <div class="figs">${D.stats.map(([b,t])=>`<div class="fig"><b>${esc(b)}</b><span>${esc(t)}</span></div>`).join('')}</div></div>
+    <div class="sd-two"><div class="stack" style="gap:10px"><span class="eyebrow">Assessment overview</span>${D.overview.map(p=>`<p>${esc(p)}</p>`).join('')}</div>
+      <div class="card"><h3>What the assessment covers</h3><ul class="sd-list">${D.covers.map(x=>`<li>${esc(x)}</li>`).join('')}</ul></div></div>
+    <div class="stack" style="gap:12px"><span class="eyebrow">Requirement areas</span><h3>Seven foundational requirements</h3>
+      <div class="sd-grid">${D.areas.map(([t,h,p,sm])=>`<div class="card sd-fr"><span class="sd-tag">${esc(t)}</span><h4>${esc(h)}</h4><p class="small">${esc(p)}</p><span class="sd-sm">${esc(sm)}</span></div>`).join('')}</div></div>
+    <div class="stack" style="gap:12px"><span class="eyebrow">Security levels</span><h3>Selecting the appropriate security level</h3><p class="muted">${esc(D.levelsIntro)}</p>
+      <div class="sd-grid">${D.levels.map(([t,p])=>`<div class="card"><span class="sd-tag">${esc(t)}</span><p class="small" style="margin-top:8px">${esc(p)}</p></div>`).join('')}</div></div>
+    <div class="stack" style="gap:12px"><span class="eyebrow">How it works</span><h3>Assessment workflow</h3>
+      <ol class="sd-steps">${D.workflow.map(([h,p,o],i)=>`<li class="card"><span class="sd-n">0${i+1}</span><div class="stack" style="gap:4px"><h4>${esc(h)}</h4><p class="small muted">${esc(p)}</p><span class="sd-out">${esc(o)}</span></div></li>`).join('')}</ol></div>
+    <div class="bar"><span class="small muted">${esc(D.start)}</span>${startBtn}</div>
+  </section>`;
+}
+
+/* ---------- dashboard ---------- */
+const DASH_PROFILES=[['ics',null],['medical','medical'],['automotive','automotive'],['consumer','consumer'],['consumer','consumer_er']];
+function homeRole(){return window.__sbxRole||ls.get('iotsbx.home.role')||null;}
+function dashRows(){
+  const rows=[];let ready=true;
+  DASH_PROFILES.forEach(([dk,pk])=>{
+    const d=DOMAINS[dk];
+    if(!pk){const I=window.__ICS&&window.__ICS.list?window.__ICS.list():null;if(!I){ready=false;return;}if(!I.ready)ready=false;
+      I.apps.forEach(a=>rows.push(Object.assign({dk,pk:'ics',domain:d.short,std:d.standards[0].code},a)));return;}
+    const n=PROF[pk],st=n.store,stdc=(d.standards.find(x=>x.id===n.std)||{}).code||'';
+    if(!st.ready)ready=false;
+    Object.values(st.apps||{}).forEach(a=>{if(!a||!a.id)return;
+      const s=st.asmts[a.id];
+      const k=a.status!=='submitted'?'draft':s&&s.status==='completed'?'ok':s&&Object.keys(s.verdicts||{}).length?'prog':'open';
+      rows.push({dk,pk,domain:d.short,std:stdc,id:a.id,name:n.devName(a)||'Untitled',org:n.devVendor(a)||'',k,
+        mine:st.mode!=='shared'||a.createdBy===st.me.id,updatedAt:a.updatedAt||a.createdAt||'',submittedAt:a.submittedAt||''});});
+  });
+  return {rows,ready};}
+const DASH_T={draft:'Draft',open:'Awaiting assessment',prog:'In assessment',ok:'Report ready'};
+function dashboard(){
+  let role=homeRole();
+  const pick=!window.__sbxRole?`<div class="seg" role="group" aria-label="View dashboard as">${[['vendor','Vendor'],['tester','Tester'],['admin','Administrator']].map(([r,t])=>`<button data-a="dash-role" data-r="${r}" aria-pressed="${role===r}">${t}</button>`).join('')}</div>`:'';
+  if(!role)return `<section class="card stack dash"><div class="section-h"><h3>Your dashboard</h3>${pick}</div><p class="small muted">Choose a role to see your applications or the assessment queue across all domains.</p></section>`;
+  const {rows,ready}=dashRows();
+  const pill=k=>`<span class="pill ${k}">${DASH_T[k]}</span>`;
+  const open=(r,m,label,cls)=>`<button class="btn ${cls||'sm'}" data-a="dash-open" data-p="${r.pk}" data-id="${esc(r.id)}" data-m="${m}">${label}</button>`;
+  const table=(list,act,empty)=>list.length?`<div class="tw"><table><thead><tr><th>Domain · standard</th><th>Device / component</th><th>ID</th><th>Status</th><th>Updated</th><th></th></tr></thead><tbody>
+      ${list.map(r=>`<tr><td><b>${esc(r.domain)}</b> <span class="muted small">· ${esc(r.std)}</span></td><td>${esc(r.name)}${r.org&&role!=='vendor'?`<div class="small muted">${esc(r.org)}</div>`:''}</td><td class="mono small">${esc(r.id)}</td><td>${pill(r.k)}</td><td class="small muted">${fmtDate(r.updatedAt)}</td><td class="num">${act(r)}</td></tr>`).join('')}</tbody></table></div>`
+    :`<div class="card empty"><p>${empty}</p></div>`;
+  const loading=!ready&&!rows.length?`<p class="small muted">Loading applications…</p>`:'';
+  if(role==='vendor'){
+    const mine=rows.filter(r=>r.mine).sort((a,b)=>(b.updatedAt||'').localeCompare(a.updatedAt||''));
+    const c=k=>mine.filter(r=>r.k===k).length;
+    return `<section class="stack dash" style="gap:12px">
+      <div class="section-h"><div class="stack" style="gap:2px"><span class="eyebrow">Vendor / OEM</span><h3>My applications</h3></div>${pick}</div>
+      <div class="dash-tiles">${[['draft','Drafts'],['open','Awaiting assessment'],['prog','In assessment'],['ok','Reports ready']].map(([k,t])=>`<div class="fig"><b>${c(k)}</b><span>${t}</span></div>`).join('')}</div>
+      ${loading||table(mine,r=>r.k==='draft'?open(r,'v','Continue →','sm primary'):r.k==='ok'?open(r,'r','View report'):open(r,'v','View'),'No applications yet. Choose a domain and standard below to start your first assessment.')}
+    </section>`;}
+  const subs=rows.filter(r=>r.k!=='draft');
+  const queue=subs.filter(r=>r.k==='open'||r.k==='prog').sort((a,b)=>(a.submittedAt||a.updatedAt||'').localeCompare(b.submittedAt||b.updatedAt||''));
+  const done=subs.filter(r=>r.k==='ok').sort((a,b)=>(b.updatedAt||'').localeCompare(a.updatedAt||''));
+  const per=DASH_PROFILES.map(([dk,pk])=>{const k=pk||'ics';const l=subs.filter(r=>r.pk===k);return {label:DOMAINS[dk].short+(pk&&pk.startsWith('consumer')?' · '+(pk==='consumer_er'?'ER':'ISVS'):''),o:l.filter(r=>r.k==='open').length,p:l.filter(r=>r.k==='prog').length,c:l.filter(r=>r.k==='ok').length};});
+  return `<section class="stack dash" style="gap:12px">
+    <div class="section-h"><div class="stack" style="gap:2px"><span class="eyebrow">${role==='admin'?'Administrator':'Tester'}</span><h3>Assessment queue</h3></div>${pick}</div>
+    <div class="dash-tiles">${[['open','Awaiting assessment',queue.filter(r=>r.k==='open').length],['prog','In assessment',queue.filter(r=>r.k==='prog').length],['ok','Reports issued',done.length],['all','Submitted in total',subs.length]].map(([k,t,n])=>`<div class="fig"><b>${n}</b><span>${t}</span></div>`).join('')}</div>
+    <div class="tw"><table class="dash-per"><thead><tr><th>Domain · standard</th><th class="num">Awaiting</th><th class="num">In assessment</th><th class="num">Reports issued</th></tr></thead><tbody>
+      ${per.map(x=>`<tr><td>${esc(x.label)}</td><td class="num">${x.o}</td><td class="num">${x.p}</td><td class="num">${x.c}</td></tr>`).join('')}</tbody></table></div>
+    <h4>To assess</h4>
+    ${loading||table(queue,r=>open(r,'t',r.k==='open'?'Start →':'Continue →','sm primary'),'Nothing waiting. New submissions from vendors appear here.')}
+    ${done.length?`<details class="dash-done"><summary>Reports issued (${done.length})</summary>${table(done.slice(0,50),r=>open(r,'t','Open'),'')}</details>`:''}
+  </section>`;}
+
 function domainView(){
-  const cards=Object.values(DOMAINS).map(d=>`
-    <button class="dcard" role="radio" aria-checked="${S.domain===d.key}" data-a="pick-domain" data-d="${d.key}">
-      <span class="radio" aria-hidden="true"></span>
-      <div class="hd"><span class="ic">${ICON[d.key]}</span></div>
-      <div class="stack" style="gap:6px">
-        <div class="row" style="gap:8px"><h2>${esc(d.name)}</h2><span class="pill ${d.live?'live':'demo'}">${d.live?'Live':'Demo'}</span></div>
-        <p class="ex">${esc(d.ex)}</p>
+  const cards=Object.values(DOMAINS).map(d=>{
+    const sel=S.domain===d.key;
+    return `<div class="dcard" role="group" aria-label="${esc(d.name)}" data-sel="${sel}">
+      <button class="dc-hd" data-a="pick-domain" data-d="${d.key}" aria-pressed="${sel}">
+        <span class="hd"><span class="ic">${ICON[d.key]}</span><span class="pill ${d.live?'live':'demo'}">${d.live?'Live':'Demo'}</span></span>
+        <span class="stack" style="gap:6px"><h2>${esc(d.name)}</h2><span class="ex">${esc(d.ex)}</span></span>
+      </button>
+      <div class="dc-stds" role="radiogroup" aria-label="Standard for ${esc(d.name)}">
+        <span class="small muted">Standard</span>
+        ${d.standards.map(s=>`<button class="std-r" role="radio" aria-checked="${sel&&S.std===s.id}" data-a="pick-std-home" data-d="${d.key}" data-s="${s.id}"><span class="rb" aria-hidden="true"></span><span>${esc(s.code)}</span></button>`).join('')}
       </div>
-      <div class="stds">${d.standards.map(s=>`<span>${esc(s.code)}</span>`).join('')}</div>
-    </button>`).join('');
+    </div>`;}).join('');
+  const d=S.domain&&DOMAINS[S.domain],s=d&&S.std&&d.standards.find(x=>x.id===S.std);
   return `
   <section class="hero">
     <div class="stack">
       <div class="eyebrow">IoT Security Sandbox · C-DAC Hyderabad</div>
       <h1>Security assessment of connected devices against the standard that applies to your sector</h1>
-      <p class="lead">Choose the domain your product belongs to, then the standard you want to be assessed against. You will be taken to the vendor workspace for that standard to submit your component.</p>
+      <p class="lead">Choose your product's domain and the standard you want to be assessed against. The description of the standard appears below; start the assessment from there.</p>
     </div>
     <div class="figs">
-      ${(()=>{const ds=Object.values(DOMAINS),live=ds.filter(d=>d.live),st=ds.flatMap(d=>d.standards.filter(x=>x.live));
-        return `<div class="fig"><b>${live.length===ds.length?ds.length+' live':live.length+' of '+ds.length+' live'}</b><span>domains: ${ds.map(d=>esc(d.short)).join(', ')}</span></div>
+      ${(()=>{const ds=Object.values(DOMAINS),live=ds.filter(x=>x.live),st=ds.flatMap(x=>x.standards.filter(y=>y.live));
+        return `<div class="fig"><b>${live.length===ds.length?ds.length+' live':live.length+' of '+ds.length+' live'}</b><span>domains: ${ds.map(x=>esc(x.short)).join(', ')}</span></div>
       <div class="fig"><b>${st.length}</b><span>standards: ${st.map(x=>esc(x.code)).join(' · ')}</span></div>`;})()}
       <div class="fig"><b>3 roles</b><span>vendor submits, tester assesses, administrator oversees</span></div>
       <div class="fig"><b>Report</b><span>compliance report per requirement</span></div>
     </div>
   </section>
+  ${dashboard()}
   ${stepper()}
   <section class="stack" style="gap:14px">
-    <div class="section-h"><h3>Step 1 · Select your product domain</h3><span class="small muted">Demo domains show proposed screens only</span></div>
-    <div class="domains" role="radiogroup" aria-label="Product domain">${cards}</div>
-    <div class="bar"><span class="small muted">${S.domain?`Selected: <b style="color:var(--ink)">${esc(DOMAINS[S.domain].name)}</b>`:'Select a domain to continue.'}</span>
-      <button class="btn primary" data-a="next-domain" ${S.domain?'':'disabled'}>Next →</button></div>
+    <div class="section-h"><h3>Select your domain and standard</h3><span class="small muted">Pick the standard under your product's domain</span></div>
+    <div class="domains">${cards}</div>
+    ${s?'':`<div class="bar"><span class="small muted">${d?`Selected: <b style="color:var(--ink)">${esc(d.name)}</b> · now choose a standard.`:'Select a domain and a standard to continue.'}</span><button class="btn primary" disabled>Start assessment →</button></div>`}
   </section>
+  ${s?stdDescription(d,s):''}
   ${howItWorks()}`;
 }
+
+/* ---------- vendor "Before you start" checklist (flow portals) ---------- */
+function prepKey(){return 'iotsbx.prep.'+P.key+'.'+P.std;}
+function partFiles(parts,out,nested,qid){(parts||[]).forEach(p=>{
+  if(p.type==='file')out.push({qid,label:p.label,opt:!!(p.opt||nested)});
+  if(p.per)Object.values(p.per).forEach(sub=>partFiles(sub,out,true,qid));
+  if(p.each)partFiles(p.each,out,true,qid);});}
+function prepItems(){
+  const it=[];
+  it.push({k:'id',g:'Product details',t:`${P.devWord} identity: name, model / order number, hardware and firmware versions, and a contact person`});
+  if(P.levels)it.push({k:'lvl',g:'Product details',t:`The target ${P.levelWord==='Level'?'level':P.levelWord} (${P.levelList.map(n=>lvl(n)).join(', ')}) the ${P.noun} is designed for`});
+  const up=Object.entries(P.uploads||{});
+  const req=up.filter(([k,u])=>!u.opt),opt=up.filter(([k,u])=>u.opt);
+  req.forEach(([k,u])=>it.push({k:'up:'+k,g:'Registration files · asked only where they apply',t:u.label,c:1}));
+  opt.forEach(([k,u])=>it.push({k:'up:'+k,g:'Registration files · asked only where they apply',t:u.label+' (optional)',c:1}));
+  const files=[];MQ.forEach(q=>partFiles(q.parts,files,false,q.id));
+  const need=files.filter(f=>!f.opt),cond=files.filter(f=>f.opt);
+  const uniq=l=>[...new Map(l.map(f=>[f.label+'|'+f.qid,f])).values()];
+  const gOf=f=>{const q=MQI[f.qid];return q&&q.gate&&!q.gateAny?q.gate:'';};
+  uniq(need).filter(f=>!gOf(f)).forEach(f=>it.push({k:'f:'+f.qid+':'+f.label,g:'Documents asked of every '+P.noun,t:f.label,ref:f.qid,c:1}));
+  uniq(need).filter(f=>gOf(f)).forEach(f=>it.push({k:'f:'+f.qid+':'+f.label,g:'Documents asked only if a Yes/No answer is Yes',t:f.label,ref:f.qid+' · '+gOf(f),c:1}));
+  const cq=[...new Set(cond.map(f=>f.qid))];
+  if(cq.length)it.push({k:'cond',g:'Documents asked of every '+P.noun,t:'Supporting documents for the options you select',ref:cq.join(', '),c:1});
+  if((P.secretFields||[]).length||(P.secretParts||[]).length)it.push({k:'sec',g:'Access for testing',t:'Test access details: default credentials, root / admin and boot-shell access'+((P.secretParts||[]).length?', and the other credentials asked in '+[...new Set(P.secretParts.map(x=>x[0]))].join(', '):''),n:'Stored separately and shown only to testers.'});
+  it.push({k:'gates',g:'Answers to prepare',t:`Which of the ${MGATES.length} Yes/No feature questions (${MGATES[0].id}–${MGATES[MGATES.length-1].id}) apply to your ${P.noun}: they decide what evidence is asked`});
+  return it;}
+function prepChecklist(){
+  const items=prepItems(),done=new Set(ls.get(prepKey())||[]);
+  const n=items.filter(x=>done.has(x.k)).length;
+  const groups=[...new Set(items.map(x=>x.g))];
+  return `<details class="card prep" ${n<items.length?'open':''}>
+    <summary><span class="stack" style="gap:2px"><b>Before you start: keep these ready</b><span class="small muted">${n} of ${items.length} ready · tick items for your own tracking; nothing here blocks you from starting</span></span></summary>
+    ${groups.map(g=>`<div class="prep-g${items.some(x=>x.g===g&&x.c)&&items.filter(x=>x.g===g).length>3?' cols':''}"><span class="eyebrow">${esc(g)}</span><ul>${items.filter(x=>x.g===g).map(x=>`<li><label class="prep-i"><input type="checkbox" data-prep="${esc(x.k)}" ${done.has(x.k)?'checked':''}><span>${esc(x.t)}${x.ref?` <span class="mono small muted">· ${esc(x.ref)}</span>`:''}${x.n?`<span class="small muted" style="display:block">${esc(x.n)}</span>`:''}</span></label></li>`).join('')}</ul></div>`).join('')}
+  </details>`;}
 
 function howItWorks(){
   return `<section class="card stack">
@@ -1317,7 +1531,7 @@ function medLanding(){
   if(S.mrole==='admin')return medHero(`${dn} · ${code} · Administrator`,P.adminTitle,P.adminLead)
     +`<section class="roles">${vendorTile()}${testerTile()}</section>`+myAppsTable()+workflowCard();
   return medHero(`${dn} · ${code} · Vendor / OEM`,P.vendorTitle,P.vendorLead)
-    +stepper()+vendorTile()+myAppsTable()+workflowCard();}
+    +stepper()+vendorTile()+prepChecklist()+myAppsTable()+workflowCard();}
 
 /* ---------- requirement map (tester / admin) ---------- */
 function mapView(){
@@ -1435,6 +1649,8 @@ async function attempt(fn,ok){try{await fn();if(ok)toast(ok);return true;}catch(
 let pendingRender=false;
 function isTyping(){const a=document.activeElement;return a&&root.contains(a)&&(a.tagName==='TEXTAREA'||(a.tagName==='INPUT'&&/^(text|email|number|url|search)$/.test(a.type))||a.tagName==='SELECT');}
 function softRender(force){if(!force&&isTyping()){pendingRender=true;return;}render();}
+window.__sbxHomeRefresh=()=>{if(S.view==='domain')softRender();};
+document.addEventListener('change',e=>{const t=e.target;if(!t||!t.dataset||t.dataset.prep==null||!P)return;const k=prepKey(),l=new Set(ls.get(k)||[]);if(t.checked)l.add(t.dataset.prep);else l.delete(t.dataset.prep);ls.set(k,[...l]);render();});
 document.addEventListener('focusout',()=>{setTimeout(()=>{if(pendingRender&&!isTyping()){pendingRender=false;render();}},0);});
 async function storeAsset(file,rec){
   if(!MStore.assets||!/\.(pdf|png|jpe?g|csv)$/i.test(file.name))return;
@@ -2264,7 +2480,17 @@ function firstIncomplete(app){return visibleItems(app).find(it=>!itemDone(it,app
 /* ---------- actions ---------- */
 const A={
   home(){S.std=null;if(window.__ICS)window.__ICS.reset();go('');},
-  'pick-domain'(el){const k=el.dataset.d;if(S.domain!==k){S.domain=k;S.std=null;}render();},
+  'pick-domain'(el){const k=el.dataset.d;if(S.domain!==k){S.domain=k;S.std=null;}const d=DOMAINS[k];if(d.standards.length===1)S.std=d.standards[0].id;render();},
+  'pick-std-home'(el){const k=el.dataset.d;S.domain=k;S.std=el.dataset.s;render();const t=document.getElementById('std-desc');if(t)try{t.scrollIntoView({behavior:'smooth',block:'start'});}catch(e){}},
+  'dash-role'(el){ls.set('iotsbx.home.role',el.dataset.r);render();},
+  'dash-open'(el){const pk=el.dataset.p,id=el.dataset.id,m=el.dataset.m,hr=homeRole()||'vendor';
+    const r=hr==='admin'?'admin':m==='t'?'tester':'vendor';
+    if(pk==='ics'){S.domain='ics';S.std='62443-4-2';if(window.__ICS&&window.__ICS.open)window.__ICS.open(id,r,m);go('ics-portal');return;}
+    const n=PROF[pk],dk=n.key;S.domain=dk;S.std=n.std;if(dk==='consumer')ls.set('iotsbx.consumer.std',n.std);
+    useProfile(pk);setMRole(r);
+    if(m==='t'){S.tapp=id;S.cr=null;S.vd={};S.ttab='crs';S.confirm=false;S.editObj=null;go(dk+'-tester');}
+    else if(m==='r'){S.rapp=id;S.rfrom='vendor';go(dk+'-report');}
+    else{openMedApp(id);go(dk+'-assess');}},
   'next-domain'(){if(S.domain)go(S.domain);},
   'pick-std'(el){S.std=el.dataset.s;render();},
   'next-std'(){if(!S.std)return;if(S.domain==='consumer')ls.set('iotsbx.consumer.std',S.std);if(S.domain==='ics'&&window.__ICS)window.__ICS.enterVendor();go(S.domain+'-portal');},
@@ -2760,16 +2986,16 @@ const QUESTIONS={
  1:Qd('What are the interfaces capable of human user access on the component?','multi',{hint:'Select all applicable interfaces.',opts:IF_HUMAN,other:'Specify other user access interface'}),
  2:Qd('What types of authentication mechanisms does the component support for user access?','multi',{hint:'Select all applicable mechanisms.',opts:['Username and Password','Certificate-based','Multi-Factor Authentication (MFA)'],other:'Specify other authentication mechanisms'}),
  3:Qd('Which interfaces support MFA?','multi',{hint:'Select all applicable interfaces.',opts:IF_HUMAN,other:'Specify other interfaces which support MFA'}),
- 4:Qd('Which MFA mechanisms are supported?','multi',{hint:'Select all applicable mechanisms.',opts:['One-time password (OTP / TOTP)','Hardware token / smart card','Certificate on secure element','Biometric','Push / out-of-band approval'],other:'Specify other MFA mechanisms'}),
+ 4:Qd('Which MFA mechanisms are supported?','multi',{hint:'Select all applicable mechanisms.',opts:['Username and Password','PIN','OTP (One-Time Password)','Digital Certificate'],other:'Specify other MFA mechanisms'}),
  5:Qd('What are the interfaces used to communicate between components?','multi',{hint:'Select all applicable interfaces.',opts:PROTOCOLS,other:'Specify other interfaces supported by the component'}),
- 6:Qd('What types of authentication mechanisms are used when communicating with other components?','multi',{hint:'Select all applicable mechanisms.',opts:['Digital Certificates (X.509 / PKI)','TLS','Pre-Shared Key (PSK)','Symmetric Cryptographic Key / Challenge-Response','Public-Key Authentication','Device Credentials'],other:'Specify other authentication mechanisms supported by the component'}),
+ 6:Qd('What types of authentication mechanisms are used when communicating with other components?','multi',{hint:'Select all applicable mechanisms.',opts:['Digital Certificates (X.509 / PKI)','TLS with Certificate Authentication','TLS with Pre-Shared Key (PSK)','Symmetric Cryptographic Key','Challenge-Response','Public-Key Authentication','Device Credentials'],other:'Specify other authentication mechanisms supported by the component'}),
  7:Qd('What is the process to create users on the component?','text',{doc:true,ph:'Describe the procedure used to create a new user account…'}),
- 8:Qd('What identifiers are used to maintain uniqueness between users?','multi',{hint:'Select all applicable identifiers.',opts:['Username / Login ID','Unique User ID / UID','Email Address','Personnel ID','Digital Certificate Identity','Public-Key Identity'],other:'Specify other identifiers used by the component'}),
+ 8:Qd('What identifiers are used to maintain uniqueness between users?','multi',{hint:'Select all applicable identifiers.',opts:['Username / Login ID','Unique User ID','Email Address','Personnel ID','Digital Certificate Identity','Public-Key Identity'],other:'Specify other identifiers used by the component'}),
  9:Qd('Provide the password policy (including password periodicity and password strength).','text',{doc:true,ph:'Minimum length, character classes, expiry period, reuse history, lockout rules…'}),
  10:Qd('What are the cryptographic keys and certificates that reside on the component and how to access them?','text',{doc:true,ph:'List keys and certificates, where they are stored, and how an authorised user reaches them…'}),
  11:Qd('Where do symmetric keys reside on the component?','text',{doc:true,ph:'Storage location and protection of symmetric keys…'}),
  12:Qd('What is the authentication mechanism used to restrict access to the symmetric key?','single',{hint:'Select the authentication mechanism.',opts:['Password','PIN','Access Control / User Role'],other:'Specify the other authentication mechanism'}),
- 13:Qd('What are the authorization mechanisms used for authenticated users of the component?','multi',{hint:'Select all applicable mechanisms.',opts:['Role-Based Access Control (RBAC)','Access Control Lists (ACLs)','User / Group Permissions','Privilege Levels','Attribute-Based Access Control (ABAC)','Mandatory Access Control (MAC)','Discretionary Access Control (DAC)','Permission-Based Controls'],other:'Specify other authorization mechanisms used by the component'}),
+ 13:Qd('What are the authorization mechanisms used for authenticated users of the component?','multi',{hint:'Select all applicable mechanisms.',opts:['Role-Based Access Control (RBAC)','Access Control Lists (ACLs)','User / Group Permissions','Privilege Levels','Attribute-Based Access Control (ABAC)','Mandatory Access Control (MAC)','Discretionary Access Control (DAC)'],other:'Specify other authorization mechanisms used by the component'}),
  14:Qd('What is the inactivity timeout for a local session?','number',{label:'Local session inactivity timeout',unit:'seconds',min:0}),
  15:Qd('What is the inactivity timeout for a remote session?','number',{label:'Remote session inactivity timeout',unit:'seconds',min:0}),
  16:Qd('How many concurrent sessions are allowed per user?','number',{label:'Maximum concurrent sessions per user',unit:'sessions',min:1}),
@@ -2950,7 +3176,7 @@ function softRender(force){if(!force&&isTyping()){pendingRender=true;return;}ren
 document.addEventListener('focusout',()=>{setTimeout(()=>{if(pendingRender&&!isTyping()){pendingRender=false;render();}},0);});
 
 function render(){
-  if(!window.__ICS_ACTIVE)return;
+  if(!window.__ICS_ACTIVE){if(window.__sbxHomeRefresh)window.__sbxHomeRefresh();return;}
   const host=document.getElementById('ics'),hdr=document.getElementById('ics-hdr');if(!host)return;
   const fid=document.activeElement&&document.activeElement.id;
   host.innerHTML=body();if(hdr)hdr.innerHTML=headerSlot();
@@ -2963,7 +3189,13 @@ function headerSlot(){
 window.__ICS={
   render(){render();},
   enterVendor(){const __r=window.__sbxRole||'vendor';ls.set('gn62443.role',__r);setRole(__r);S.draft=null;S.confirm=null;},
-  reset(){if(S.role)S.view='home';S.draft=null;S.confirm=null;}
+  reset(){if(S.role)S.view='home';S.draft=null;S.confirm=null;},
+  list(){return {ready:!!Store.appsReady,apps:Object.entries(Store.apps).map(([id,a])=>{const st=appStatus(a,Store.asmts[id]);const m=a.meta||{};
+    return {id,name:m.component||'Untitled component',org:m.vendor||'',k:st.k==='done'?'ok':st.k,mine:Store.mode!=='shared'||a.createdBy===Store.me.id,updatedAt:a.updatedAt||a.createdAt||'',submittedAt:a.submittedAt||''};})};},
+  open(id,role,m){ls.set('gn62443.role',role);setRole(role);S.confirm=null;S.draft=null;
+    if(m==='t'){if(S.role==='admin'){S.act='tester';ls.set('gn62443.act','tester');}S.appId=id;S.view='tester';S.reqId=null;S.vd={};S.editObj=null;}
+    else if(m==='r'){S.appId=id;S.view='report';}
+    else if(Store.apps[id])openVendorApp(id);}
 };
 function header(){
   const r=S.role;
@@ -3054,6 +3286,7 @@ const HERO_ALL=['IEC 62443-4-2 · Component requirements · Embedded devices','A
 function homeView(){
   if(S.role==='vendor')return heroBlock('Vendor / OEM','Submit your component for IEC 62443-4-2 assessment','Declare the Security Level you are targeting, tell us what the component can do, and provide the evidence the tester needs. You can save and come back at any time until you submit.',false)
     +`<section>${vendorTile(true,'Start or continue an application →')}</section>`
+    +icsPrep()
     +workflowBlock('vendor','After you submit, your responses are locked. A tester assesses every requirement that applies to your component and records a verdict with a justification for each. The compliance report then appears under My applications.');
   if(S.role==='tester')return heroBlock(...HERO_ALL,true)
     +`<section>${testerTile(true,'Open applications →')}</section>`
@@ -3061,6 +3294,29 @@ function homeView(){
   return heroBlock(...HERO_ALL,true)
     +`<section class="roles">${vendorTile(false,'Open vendor workspace →')}${testerTile(false,'Open assessments →')}</section>`
     +workflowBlock('',NOTE_FILTERS);}
+
+/* ---------- Vendor "Before you start" checklist (non-blocking) ---------- */
+function icsPrep(){
+  const Q=Object.entries(QUESTIONS).map(([n,q])=>[+n,q]);
+  const nums=f=>Q.filter(([n,q])=>f(q)).map(([n])=>'Q'+n);
+  const span=l=>l.length>8?l.slice(0,8).join(', ')+' …':l.join(', ');
+  const docs=nums(q=>q.type==='text'&&q.doc),lists=nums(q=>q.type==='multi'||q.type==='groups'||q.type==='single'),numsq=Q.filter(([n,q])=>q.type==='number');
+  const items=[
+    ['id','Component details','Component identity: vendor, component name, model / order number, component type, hardware and firmware versions, contact person',''],
+    ['sl','Component details','The Security Level (SL 1–4) the component is designed for',''],
+    ['gates','Answers to prepare','Which of the ten capabilities (A1–A10) the component has: human user access, communication with other components, passwords, PKI, symmetric keys, remote access, debug interfaces, cryptography, mobile code, wireless','A1–A10'],
+    ...nums(q=>q.type==='firmware').map(r=>['fw','Files to upload','Signed and unsigned firmware update packages in one .zip file',r]),
+    ...Q.filter(([n,q])=>q.type==='multidoc').map(([n,q])=>['md'+n,'Files to upload',q.docLabel+' (PDF)','Q'+n]),
+    ['docs','Files to upload','A short written answer and a supporting PDF for each descriptive question that applies, e.g. user creation, password policy, keys and certificates, logging, fail-safe state, tamper detection, factory reset, backup and recovery, boot process',span(docs)],
+    ['lists','Answers to prepare','Lists of the interfaces, protocols, authentication and authorization mechanisms, ports, wireless technologies and cipher suites the component supports',span(lists)],
+    ['nums','Answers to prepare',numsq.map(([n,q])=>q.label).join(', '),numsq.map(([n])=>'Q'+n).join(', ')]];
+  const key='iotsbx.prep.ics',done=new Set(ls.get(key)||[]);const n=items.filter(x=>done.has(x[0])).length;
+  const groups=[...new Set(items.map(x=>x[1]))];
+  return `<section><details class="card prep" ${n<items.length?'open':''}>
+    <summary><span class="stack" style="gap:2px"><b>Before you start: keep these ready</b><span class="small muted">${n} of ${items.length} ready · tick items for your own tracking; nothing here blocks you from starting. Only questions that apply to your component and Security Level are asked.</span></span></summary>
+    ${groups.map(g=>`<div class="prep-g"><span class="eyebrow">${esc(g)}</span><ul>${items.filter(x=>x[1]===g).map(([k,_,t,r])=>`<li><label class="prep-i"><input type="checkbox" data-icsprep="${esc(k)}" ${done.has(k)?'checked':''}><span>${esc(t)}${r?` <span class="mono small muted">· ${esc(r)}</span>`:''}</span></label></li>`).join('')}</ul></div>`).join('')}
+  </details></section>`;}
+document.addEventListener('change',e=>{const t=e.target;if(!t||!t.dataset||t.dataset.icsprep==null)return;const k='iotsbx.prep.ics',l=new Set(ls.get(k)||[]);if(t.checked)l.add(t.dataset.icsprep);else l.delete(t.dataset.icsprep);ls.set(k,[...l]);render();});
 
 /* ---------- Vendor list ---------- */
 function myApps(){return Object.entries(Store.apps).filter(([id,a])=>Store.mode!=='shared'||a.createdBy===Store.me.id).map(([id,a])=>({id,...a})).sort((a,b)=>(b.updatedAt||'').localeCompare(a.updatedAt||''));}
@@ -3124,8 +3380,6 @@ function stepDetails(d){
       ${f('contact','Contact person','Name of the vendor’s point of contact')}
       ${f('email','Contact email','name@company.com',false,'email')}
       <div class="field full"><label for="f-desc">Short description</label><textarea id="f-desc" data-f="meta.desc" placeholder="What the component does and where it is deployed…" style="min-height:80px">${esc(m.desc||'')}</textarea></div>
-      <div style="grid-column:1/-1;display:flex;flex-direction:column;gap:6px">${uploadField(21,(d.answers||{})[21]||{},'.zip','ZIP','Firmware package: signed and unsigned (.zip)')}
-        <p class="help">Put both the signed and the unsigned firmware images in one .zip file. This also answers Q21 of the assurance questionnaire, so you will not be asked for it again.</p></div>
     </div>
     <div class="qfoot"><span class="small muted">Fields marked * are required.</span><button class="btn primary" data-a="save-details">Save & Continue →</button></div>
   </section>`;}
@@ -3176,7 +3430,7 @@ function questionForm(qn,a,d){
     case 'text':h+=`<div class="field"><label for="q-${qn}-text" class="req">Answer</label><textarea id="q-${qn}-text" data-qa="text" data-q="${qn}" placeholder="${esc(q.ph||'')}">${esc(a.text||'')}</textarea></div>`+(q.doc?uploadField(qn,a,'.pdf','PDF','Supporting document / evidence'):'');break;
     case 'number':h+=`<div class="field" style="max-width:360px"><label for="q-${qn}-num" class="req">${esc(q.label)}</label><div class="row" style="flex-wrap:nowrap"><input id="q-${qn}-num" type="number" min="${q.min||0}" step="1" inputmode="numeric" data-qa="num" data-q="${qn}" value="${a.num??''}" ${a.na?'disabled':''}><span class="muted">${esc(q.unit)}</span></div></div>
       <label class="opt" style="max-width:420px"><input type="checkbox" data-qna="${qn}" ${a.na?'checked':''}><span>Not supported by the component</span></label>`;break;
-    case 'firmware':h+=`<p class="help">${esc(q.hint)}</p>`+((a.files||[]).length?`<div class="banner ok"><b>Auto-filled from Component details.</b><span>This is the package uploaded there. Replacing it here also updates Component details.</span></div>`:'')+uploadField(qn,a,'.zip','ZIP','Firmware package');break;
+    case 'firmware':h+=`<p class="help">${esc(q.hint)}</p>`+uploadField(qn,a,'.zip','ZIP','Firmware package');break;
   }
   if(['multi','single','number','groups','multidoc'].includes(q.type))
     h+=`<div class="field"><label for="q-${qn}-notes">Notes for the tester <span class="muted">(optional)</span></label><textarea id="q-${qn}-notes" data-qa="notes" data-q="${qn}" style="min-height:70px" placeholder="${qn===38?'Port numbers and services, e.g. TCP 443 (HTTPS), TCP 102 (engineering)…':'Context that helps the tester verify this answer…'}">${esc(a.notes||'')}</textarea></div>`;
@@ -3374,9 +3628,9 @@ function exampleApp(status){
     2:{sel:['Username and Password']},
     3:{sel:['Web Interface']},4:{sel:['One-time password (OTP / TOTP)']},
     5:{sel:['PROFINET','Modbus TCP','OPC UA']},
-    6:{sel:['TLS','Digital Certificates (X.509 / PKI)']},
+    6:{sel:['TLS with Certificate Authentication','Digital Certificates (X.509 / PKI)']},
     7:{text:'An Administrator creates users in the engineering software under Device security > Users. Each user gets a unique name, an initial password that must be changed at first login, and one role.',files:[EXF('EX-200_User_Management.pdf',248000)]},
-    8:{sel:['Username / Login ID','Unique User ID / UID']},
+    8:{sel:['Username / Login ID','Unique User ID']},
     9:{text:'Minimum 10 characters with upper case, lower case, digit and special character. Expiry configurable from 30 to 365 days (default 90). The last 5 passwords cannot be reused. Five failed logins lock the account for 15 minutes. Password entry is masked on all interfaces.',files:[EXF('EX-200_Password_Policy.pdf',182000)]},
     10:{text:'Device certificate (RSA-2048) and TLS server certificate stored in the secure element. An Administrator can view, replace and export the public part from the web server Certificates page.',files:[EXF('EX-200_Certificate_Management.pdf',305000)]},
     11:{text:'Not applicable: the component does not use symmetric-key authentication.'},12:{one:'Access Control / User Role'},
@@ -3475,13 +3729,11 @@ const A={
   async 'save-details'(){
     const d=S.draft;const m=d.meta||{};
     const need=[['vendor','Vendor / OEM organisation'],['component','Component name'],['model','Model / order number'],['ctype','Component type'],['fw','Firmware version']].filter(([k])=>!(m[k]||'').trim());
-    const fw=(d.answers||{})[21];
-    if(!fw||!(fw.files||[]).length)need.push(['fw-zip','Firmware package (.zip)']);
     if(need.length){toast('Fill in: '+need.map(x=>x[1]).join(', ')+'.');return;}
-    const t=nowISO();fw.at=t;
-    if(!d.id){const id=newId();const data={meta:m,gates:{},answers:{21:clone(fw)},status:'draft',createdBy:Store.me.id||'local',createdAt:t,updatedAt:t};
+    const t=nowISO();
+    if(!d.id){const id=newId();const data={meta:m,gates:{},answers:{},status:'draft',createdBy:Store.me.id||'local',createdAt:t,updatedAt:t};
       const ok=await attempt(()=>Store.createApp(id,data));if(!ok)return;d.id=id;S.appId=id;Object.assign(d,data,{id});}
-    else{const ok=await saveDraft({meta:m,answers:{21:clone(fw)}});if(!ok)return;}
+    else{const ok=await saveDraft({meta:m});if(!ok)return;}
     S.step='sl';render();window.scrollTo(0,0);},
   'set-sl'(el){S.draft.sl=+el.dataset.sl;render();},
   async 'save-sl'(){if(!S.draft.sl)return;if(await saveDraft({sl:S.draft.sl})){S.step='gates';render();window.scrollTo(0,0);}},
