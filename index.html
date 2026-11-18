@@ -831,9 +831,8 @@ function dashboard(){
     <div class="dash-tiles">${[['open','Awaiting assessment',queue.filter(r=>r.k==='open').length],['prog','In assessment',queue.filter(r=>r.k==='prog').length],['ok','Reports issued',done.length],['all','Submitted in total',subs.length]].map(([k,t,n])=>`<div class="fig"><b>${n}</b><span>${t}</span></div>`).join('')}</div>
     <div class="tw"><table class="dash-per"><thead><tr><th>Domain · standard</th><th class="num">Awaiting</th><th class="num">In assessment</th><th class="num">Reports issued</th><th></th></tr></thead><tbody>
       ${per.map(x=>`<tr><td><b>${esc(x.domain)}</b> <span class="muted small">·</span> ${stdLink(x.dk,x.sid,x.code)}</td><td class="num">${x.o}</td><td class="num">${x.p}</td><td class="num">${x.c}</td><td class="num"><button class="btn sm quiet" data-a="dash-portal" data-p="${x.pk}">Open →</button></td></tr>`).join('')}</tbody></table></div>
-    <p class="small muted">Click a standard to read its description. Open takes you to that portal's tester workspace (applications, requirement map, settings).</p>
-    <h4>To assess</h4>
-    ${loading||table(queue,r=>open(r,'t',r.k==='open'?'Start →':'Continue →','sm primary'),'Nothing waiting. New submissions from vendors appear here.')}
+    <p class="small muted">Click a standard to read its description. Open takes you to that portal's tester workspace, where its submissions are listed and assessed.</p>
+    ${loading}
     ${done.length?`<details class="dash-done"><summary>Reports issued (${done.length})</summary>${table(done.slice(0,50),r=>open(r,'t','Open'),'')}</details>`:''}
   </section>`;}
 
@@ -851,7 +850,7 @@ function domainView(){
     <div class="stack">
       <div class="eyebrow">IoT Security Sandbox · C-DAC Hyderabad · ${homeRole()==='admin'?'Administrator':'Tester'}</div>
       <h1>Assess submitted devices against the standard that applies to their sector</h1>
-      <p class="lead">Every submission from every domain arrives in the queue below. Open one to assess it, or click a standard to read its description.</p>
+      <p class="lead">Submissions from every domain are counted below. Open a portal to assess its submissions, or click a standard to read its description.</p>
     </div>
     <div class="figs">
       <div class="fig"><b>${Object.values(DOMAINS).length}</b><span>domains: ${Object.values(DOMAINS).map(x=>esc(x.short)).join(', ')}</span></div>
