@@ -977,15 +977,17 @@ function partFiles(parts,out,nested,qid){(parts||[]).forEach(p=>{
   if(p.type==='file')out.push({qid,label:p.label,opt:!!(p.opt||nested)});
   if(p.per)Object.values(p.per).forEach(sub=>partFiles(sub,out,true,qid));
   if(p.each)partFiles(p.each,out,true,qid);});}
-function prepItems(){
-  const it=[];
+function prepItems(sl){
+  const it=[];const atL=x=>!sl||atLv(x,sl);const QS=MQ.filter(atL),GS=MGATES.filter(atL);
+  if(!sl){
   it.push({k:'id',g:'Product details',t:`${P.devWord} identity: name, model / order number, hardware and firmware versions, and a contact person`});
   if(P.levels)it.push({k:'lvl',g:'Product details',t:`The target ${P.levelWord==='Level'?'level':P.levelWord} (${P.levelList.map(n=>lvl(n)).join(', ')}) the ${P.noun} is designed for`});
   const up=Object.entries(P.uploads||{});
   const req=up.filter(([k,u])=>!u.opt),opt=up.filter(([k,u])=>u.opt);
   req.forEach(([k,u])=>it.push({k:'up:'+k,g:'Registration files · asked only where they apply',t:u.label,c:1}));
   opt.forEach(([k,u])=>it.push({k:'up:'+k,g:'Registration files · asked only where they apply',t:u.label+' (optional)',c:1}));
-  const files=[];MQ.forEach(q=>partFiles(q.parts,files,false,q.id));
+  }
+  const files=[];QS.forEach(q=>partFiles(q.parts,files,false,q.id));
   const need=files.filter(f=>!f.opt),cond=files.filter(f=>f.opt);
   const uniq=l=>[...new Map(l.map(f=>[f.label+'|'+f.qid,f])).values()];
   const gOf=f=>{const q=MQI[f.qid];return q&&q.gate&&!q.gateAny?q.gate:'';};
@@ -993,15 +995,17 @@ function prepItems(){
   uniq(need).filter(f=>gOf(f)).forEach(f=>it.push({k:'f:'+f.qid+':'+f.label,g:'Documents asked only if a Yes/No answer is Yes',t:f.label,ref:f.qid+' · '+gOf(f),c:1}));
   const cq=[...new Set(cond.map(f=>f.qid))];
   if(cq.length)it.push({k:'cond',g:'Documents asked of every '+P.noun,t:'Supporting documents for the options you select',ref:cq.join(', '),c:1});
-  if((P.secretFields||[]).length||(P.secretParts||[]).length)it.push({k:'sec',g:'Access for testing',t:'Test access details: default credentials, root / admin and boot-shell access'+((P.secretParts||[]).length?', and the other credentials asked in '+[...new Set(P.secretParts.map(x=>x[0]))].join(', '):''),n:'Stored separately and shown only to testers.'});
-  it.push({k:'gates',g:'Answers to prepare',t:`Which of the ${MGATES.length} Yes/No feature questions (${MGATES[0].id}–${MGATES[MGATES.length-1].id}) apply to your ${P.noun}: they decide what evidence is asked`});
+  const sp=(P.secretParts||[]).filter(x=>QS.some(q=>q.id===x[0]));
+  if(sl){if(sp.length)it.push({k:'sec',g:'Access for testing',t:'Credentials asked in '+[...new Set(sp.map(x=>x[0]))].join(', ')+' (stored separately and shown only to testers)'});}
+  else if((P.secretFields||[]).length||(P.secretParts||[]).length)it.push({k:'sec',g:'Access for testing',t:'Test access details: default credentials, root / admin and boot-shell access'+((P.secretParts||[]).length?', and the other credentials asked in '+[...new Set(P.secretParts.map(x=>x[0]))].join(', '):''),n:'Stored separately and shown only to testers.'});
+  if(GS.length)it.push({k:'gates',g:'Answers to prepare',t:`Which of the ${GS.length} Yes/No feature questions (${GS[0].id}–${GS[GS.length-1].id}) apply to your ${P.noun}: they decide what evidence is asked`});
   return it;}
-function prepChecklist(){
-  const items=prepItems(),done=new Set(ls.get(prepKey())||[]);
+function prepChecklist(sl){
+  const items=prepItems(sl),done=new Set(ls.get(prepKey())||[]);
   const n=items.filter(x=>done.has(x.k)).length;
   const groups=[...new Set(items.map(x=>x.g))];
   return `<details class="card prep" ${n<items.length?'open':''}>
-    <summary><span class="stack" style="gap:2px"><b>Before you start: keep these ready</b><span class="small muted">${n} of ${items.length} ready · tick items for your own tracking; nothing here blocks you from starting</span></span></summary>
+    <summary><span class="stack" style="gap:2px"><b>${sl?'Before the questionnaire: keep these ready for '+esc(lvl(sl)):'Before you start: keep these ready'}</b><span class="small muted">${n} of ${items.length} ready · tick items for your own tracking; nothing here blocks you from starting</span></span></summary>
     ${groups.map(g=>`<div class="prep-g${items.some(x=>x.g===g&&x.c)&&items.filter(x=>x.g===g).length>3?' cols':''}"><span class="eyebrow">${esc(g)}</span><ul>${items.filter(x=>x.g===g).map(x=>`<li><label class="prep-i"><input type="checkbox" data-prep="${esc(x.k)}" ${done.has(x.k)?'checked':''}><span>${esc(x.t)}${x.ref?` <span class="mono small muted">· ${esc(x.ref)}</span>`:''}${x.n?`<span class="small muted" style="display:block">${esc(x.n)}</span>`:''}</span></label></li>`).join('')}</ul></div>`).join('')}
   </details>`;}
 
@@ -1389,6 +1393,7 @@ function mSL(app){
     <div class="stack" style="gap:4px"><h3>Declare the target ${P.levelWord==='Level'?'level':P.levelWord}</h3><p class="muted small">The ${P.levelWord==='Level'?'level':P.levelWord} decides which questions the questionnaire asks${P.idLevels?' and which requirements are assessed':''}. ${P.indepLevels?'Each level has its own requirement list.':'Each level includes everything asked at the levels below it.'}</p></div>
     <div class="slgrid" role="radiogroup" aria-label="${P.levelWord}"${P.levelList.length===3?' style="grid-template-columns:repeat(3,minmax(0,1fr))"':''}>${P.levelList.map(n=>{const s=slStats(n);return `<button class="slcard" role="radio" aria-checked="${app.sl===n}" data-a="m-sl" data-sl="${n}"><span class="big"><small>${P.lvlBig}</small>${n}</span><p>${P.levelDesc[n]}</p><span class="slmeta">${slItems(n)} questionnaire items · up to ${s.cr} ${P.reqWord==='CR'?'CRs':'requirements'}</span></button>`;}).join('')}</div>
     <p class="small muted">${(()=>{if(P.indepLevels)return '';const L=P.levelList,same=L.slice(1).filter(n=>slItems(n)===slItems(n-1));return same.map(n=>{const d=slStats(n).cr-slStats(n-1).cr;return `${lvl(n-1)} and ${lvl(n)} ask the same questions${d>0?`; ${lvl(n)} assesses ${d} more requirement${d>1?'s':''}`:''}.`;}).join(' ');})()} Changing the level later keeps your answers.</p>
+    ${app.sl?prepChecklist(app.sl):`<p class="small muted">Choose a ${P.levelWord==='Level'?'level':P.levelWord} to see what to keep ready for the questionnaire at that ${P.levelWord==='Level'?'level':P.levelWord}.</p>`}
     <div class="qfoot"><button class="btn quiet" data-a="m-step" data-k="details">← Back</button><button class="btn primary" data-a="m-sl-save" ${app.sl?'':'disabled'}>Save &amp; Continue →</button></div>
   </section>`;}
 
@@ -1635,7 +1640,7 @@ function medLanding(){
   if(S.mrole==='admin')return medHero(`${dn} · ${code} · Administrator`,P.adminTitle,P.adminLead)
     +`<section class="roles">${vendorTile()}${testerTile()}</section>`+myAppsTable()+workflowCard();
   return medHero(`${dn} · ${code} · Vendor / OEM`,P.vendorTitle,P.vendorLead)
-    +stepper()+vendorTile()+prepChecklist()+myAppsTable()+workflowCard();}
+    +stepper()+vendorTile()+(P.levels?'':prepChecklist())+myAppsTable()+workflowCard();}
 
 /* ---------- requirement map (tester / admin) ---------- */
 function mapView(){
@@ -3399,7 +3404,6 @@ const HERO_ALL=['IEC 62443-4-2 · Component requirements · Embedded devices','A
 function homeView(){
   if(S.role==='vendor')return heroBlock('Vendor / OEM','Submit your component for IEC 62443-4-2 assessment','Declare the Security Level you are targeting, tell us what the component can do, and provide the evidence the tester needs. You can save and come back at any time until you submit.',false)
     +`<section>${vendorTile(true,'Start or continue an application →')}</section>`
-    +icsPrep()
     +workflowBlock('vendor','After you submit, your responses are locked. A tester assesses every requirement that applies to your component and records a verdict with a justification for each. The compliance report then appears under My applications.');
   if(S.role==='tester')return heroBlock(...HERO_ALL,true)
     +`<section>${testerTile(true,'Open applications →')}</section>`
@@ -3409,26 +3413,29 @@ function homeView(){
     +workflowBlock('',NOTE_FILTERS);}
 
 /* ---------- Vendor "Before you start" checklist (non-blocking) ---------- */
-function icsPrep(){
-  const Q=Object.entries(QUESTIONS).map(([n,q])=>[+n,q]);
-  const nums=f=>Q.filter(([n,q])=>f(q)).map(([n])=>'Q'+n);
-  const span=l=>l.length>8?l.slice(0,8).join(', ')+' …':l.join(', ');
-  const docs=nums(q=>q.type==='text'&&q.doc),lists=nums(q=>q.type==='multi'||q.type==='groups'||q.type==='single'),numsq=Q.filter(([n,q])=>q.type==='number');
+function icsPrep(sl){
+  /* questions the component can be asked at this SL, and whether each depends on a capability (A1–A10) */
+  const inq=new Map();
+  REQS.filter(r=>r.sl<=sl).forEach(r=>r.qs.forEach(n=>{const e=inq.get(n)||{always:false,gates:new Set()};if(r.gate==='A')e.always=true;else e.gates.add(r.gate);inq.set(n,e);}));
+  const Q=Object.entries(QUESTIONS).map(([n,q])=>[+n,q]).filter(([n])=>inq.has(n));
+  const ref=n=>{const e=inq.get(n);return 'Q'+n+(e.always?'':' · if '+[...e.gates].join(' / ')+' is Yes');};
+  const qn=l=>l.map(([n])=>'Q'+n);const span=l=>l.join(', ');
+  const docsA=Q.filter(([n,q])=>q.type==='text'&&q.doc&&inq.get(n).always),docsG=Q.filter(([n,q])=>q.type==='text'&&q.doc&&!inq.get(n).always);
+  const lists=Q.filter(([n,q])=>q.type==='multi'||q.type==='groups'||q.type==='single'),numsq=Q.filter(([n,q])=>q.type==='number');
   const items=[
-    ['id','Component details','Component identity: vendor, component name, model / order number, component type, hardware and firmware versions, contact person',''],
-    ['sl','Component details','The Security Level (SL 1–4) the component is designed for',''],
-    ['gates','Answers to prepare','Which of the ten capabilities (A1–A10) the component has: human user access, communication with other components, passwords, PKI, symmetric keys, remote access, debug interfaces, cryptography, mobile code, wireless','A1–A10'],
-    ...nums(q=>q.type==='firmware').map(r=>['fw','Files to upload','Signed and unsigned firmware update packages in one .zip file',r]),
-    ...Q.filter(([n,q])=>q.type==='multidoc').map(([n,q])=>['md'+n,'Files to upload',q.docLabel+' (PDF)','Q'+n]),
-    ['docs','Files to upload','A short written answer and a supporting PDF for each descriptive question that applies, e.g. user creation, password policy, keys and certificates, logging, fail-safe state, tamper detection, factory reset, backup and recovery, boot process',span(docs)],
-    ['lists','Answers to prepare','Lists of the interfaces, protocols, authentication and authorization mechanisms, ports, wireless technologies and cipher suites the component supports',span(lists)],
-    ['nums','Answers to prepare',numsq.map(([n,q])=>q.label).join(', '),numsq.map(([n])=>'Q'+n).join(', ')]];
+    ['gates','Answers to prepare','Which of the ten capabilities (A1–A10) the component has: they decide which of the questions below are asked','A1–A10'],
+    ...Q.filter(([n,q])=>q.type==='firmware').map(([n])=>['fw','Files to upload','Signed and unsigned firmware update packages in one .zip file',ref(n)]),
+    ...Q.filter(([n,q])=>q.type==='multidoc').map(([n,q])=>['md'+n,'Files to upload',q.docLabel+' (PDF)',ref(n)]),
+    ...(docsA.length?[['docs','Files to upload',`A short written answer and a supporting PDF for each of these ${docsA.length} descriptive question${docsA.length>1?'s':''}`,span(qn(docsA))]]:[]),
+    ...(docsG.length?[['docsg','Files to upload',`The same for ${docsG.length} more descriptive question${docsG.length>1?'s':''} asked only if the related capability is Yes`,span(qn(docsG))]]:[]),
+    ...(lists.length?[['lists','Answers to prepare','Lists of the interfaces, protocols, mechanisms, ports and technologies the component supports',span(qn(lists))]]:[]),
+    ...(numsq.length?[['nums','Answers to prepare',numsq.map(([n,q])=>q.label).join(', '),qn(numsq).join(', ')]]:[])];
   const key='iotsbx.prep.ics',done=new Set(ls.get(key)||[]);const n=items.filter(x=>done.has(x[0])).length;
   const groups=[...new Set(items.map(x=>x[1]))];
-  return `<section><details class="card prep" ${n<items.length?'open':''}>
-    <summary><span class="stack" style="gap:2px"><b>Before you start: keep these ready</b><span class="small muted">${n} of ${items.length} ready · tick items for your own tracking; nothing here blocks you from starting. Only questions that apply to your component and Security Level are asked.</span></span></summary>
+  return `<details class="card prep" open>
+    <summary><span class="stack" style="gap:2px"><b>Before the questionnaire: keep these ready for SL ${sl}</b><span class="small muted">${Q.length} question${Q.length>1?'s':''} can be asked at SL ${sl} · ${n} of ${items.length} ready · tick items for your own tracking; nothing here blocks you</span></span></summary>
     ${groups.map(g=>`<div class="prep-g"><span class="eyebrow">${esc(g)}</span><ul>${items.filter(x=>x[1]===g).map(([k,_,t,r])=>`<li><label class="prep-i"><input type="checkbox" data-icsprep="${esc(k)}" ${done.has(k)?'checked':''}><span>${esc(t)}${r?` <span class="mono small muted">· ${esc(r)}</span>`:''}</span></label></li>`).join('')}</ul></div>`).join('')}
-  </details></section>`;}
+  </details>`;}
 document.addEventListener('change',e=>{const t=e.target;if(!t||!t.dataset||t.dataset.icsprep==null)return;const k='iotsbx.prep.ics',l=new Set(ls.get(k)||[]);if(t.checked)l.add(t.dataset.icsprep);else l.delete(t.dataset.icsprep);ls.set(k,[...l]);render();});
 
 /* ---------- Vendor list ---------- */
@@ -3501,6 +3508,7 @@ function stepSL(d){
   return `<section class="card stack lg">
     <div class="stack" style="gap:4px"><h3>Declare the target Security Level</h3><p class="muted small">The component is assessed against every requirement at the declared level and the levels below it.</p></div>
     <div class="slgrid" role="radiogroup" aria-label="Security Level">${[1,2,3,4].map(n=>`<button class="slcard" role="radio" aria-checked="${d.sl===n}" data-a="set-sl" data-sl="${n}"><span class="big"><small>SL</small>${n}</span><p>${SL_DESC[n]}</p></button>`).join('')}</div>
+    ${d.sl?icsPrep(d.sl):'<p class="small muted">Choose a Security Level to see what to keep ready for the questionnaire at that level.</p>'}
     <div class="qfoot"><button class="btn quiet" data-a="goto-step" data-step="details">← Back</button><button class="btn primary" data-a="save-sl" ${d.sl?'':'disabled'}>Save & Continue →</button></div>
   </section>`;}
 
