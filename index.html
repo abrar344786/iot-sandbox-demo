@@ -714,7 +714,7 @@ function stepper(){
 /* Standard descriptions shown on the home page when a standard is selected.
    Medical: from "IEC TR 60601-4-5 · Medical Devices" page supplied by the medical team.
    ICS: written to the same structure (IEC TR 60601-4-5 builds on the IEC 62443-4-2 component requirements).
-   Other standards show a short summary until their teams provide the content. */
+   AIS 189, OWASP ISVS and Essential Requirements: written to the same structure from the standards and the questionnaires. */
 const SL_TEXT=[['SL 1','Casual or coincidental misuse'],['SL 2','Simple means, low resources, generic skills'],['SL 3','Sophisticated means, moderate resources, IACS skills'],['SL 4','Sophisticated means, extended resources, IACS skills']];
 const STD_DESC={
   '60601-4-5':{
@@ -757,7 +757,77 @@ const STD_DESC={
     workflow:[['Define the target','Settle the component type, its boundary and the target security level.','Output: scope and target security level'],
       ['Applicability and evidence','Answer the ten Yes/No applicability questions, then the assurance questionnaire with the documents, firmware and lists the tester needs.','Output: the set of applicable requirements, with evidence'],
       ['Requirement assessment','The tester checks each applicable requirement and records Pass or Fail with a justification.','Output: compliance report per requirement']],
-    start:'You will be taken to the IEC 62443-4-2 vendor workspace to submit your component.'}
+    start:'You will be taken to the IEC 62443-4-2 vendor workspace to submit your component.'},
+  'ais189':{noun:'vehicle',
+    title:'Cybersecurity assessment of vehicle types against AIS 189',
+    stats:[['8','threat categories, A to H, from back-end servers to physical loss of data'],['70','requirement IDs mapped; 25 of them apply to every vehicle'],['3 roles','manufacturer submits, tester assesses, administrator oversees'],['Report','compliance report per requirement']],
+    overview:['AIS 189 is the Automotive Industry Standard for the approval of vehicles with regard to cyber security and the cyber security management system (CSMS). It is published by ARAI on behalf of the Automotive Industry Standards Committee under the Ministry of Road Transport and Highways, and is aligned with UN Regulation No. 155.',
+      'Vehicles now carry many connected electronic control units, telematics, remote functions and over-the-air software updates. Each of these widens what an attacker can reach, so the standard asks manufacturers to show that cyber risks are identified, assessed and mitigated across the vehicle lifecycle, and that a CSMS governs how this is done.',
+      'The sandbox focuses on the vehicle type. The manufacturer registers, describes the vehicle using the details in AIS 189 Annexure A and answers one questionnaire: seventeen Yes/No questions (A21–A37) decide which threats apply, and the follow-up questions (Q84–Q109) collect the architecture, interface and configuration evidence for each one. The tester assesses every applicable requirement and records a verdict with a justification.',
+      'It is designed for vehicle manufacturers and their suppliers preparing for type approval, and for teams who want an early, structured view of where a vehicle type stands.'],
+    covers:['Manufacturer and vehicle type details from AIS 189 Annexure A','Vehicle architecture, ECUs and internal network segmentation through gateways','Back-end servers and cloud services that support the vehicle','In-vehicle and external communication channels, including V2X and EV charging','Diagnostic and service interfaces, and authentication of third-party tools','Software update processes, over the air and local','USB, wireless and other externally accessible interfaces, and open ports and services','Third-party applications and remote vehicle functions','Personal data, cryptographic keys and certificates, and logging','Physical tampering and the loss of data'],
+    areasEyebrow:'Threat categories',areasTitle:'Eight categories of threats to the vehicle',
+    areasIntro:'Requirements are organised by the threat categories used in the standard. Each category groups several threats, and each threat carries one or more requirement IDs.',
+    areas:[['A','Back-end servers','Attacks that use the servers supporting vehicles in the field to reach the vehicle, disrupt its services or expose its data.','Data exfiltration · Disruption of services · Data breach'],
+      ['B','Vehicle communication channels','Threats to the channels the vehicle uses to exchange messages and data, inside and outside the vehicle.','Spoofing · Tampering · Denial of service · Privilege escalation · Malware injection'],
+      ['C','Vehicle software update processes','Compromise of the procedures that deliver and install software, and denial of legitimate updates.','Update compromise · Denial of legitimate updates'],
+      ['D','Unintended human actions','Situations where owners, operators or service staff unintentionally make an attack possible.','Unintentional threats'],
+      ['E','External communication interfaces','Exploitation of remote connectivity, third-party software and physical interfaces exposed by the vehicle.','Remote connectivity · Third-party software · Physical interfaces'],
+      ['F','Vehicle data and code','Extraction, tampering or deletion of data and software in the vehicle, and installation of unauthorised software.','Extraction · Tampering · Deletion · Malware · Unauthorised software · Parameters'],
+      ['G','Known vulnerabilities in system components','Weaknesses that make other attacks easier if they are not addressed.','Weak cryptography · Supply chain · Development practices · Network architecture · Data leakage · Physical tampering'],
+      ['H','Physical loss of data','Loss of data when a vehicle or component is damaged, stolen or changes hands.','Physical loss of data']],
+    levelsEyebrow:'Applicability',levelsTitle:'How the requirements for a vehicle are selected',
+    levelsIntro:'AIS 189 has no security levels. Every vehicle type is assessed against the same requirement set, and the vehicle’s own features decide which parts of it apply.',
+    levels:[['No levels','One requirement set for every vehicle type; there is no level to choose'],['A21–A37','Seventeen Yes/No questions about features such as back-end servers, V2X, over-the-air updates, wireless interfaces and EV charging decide which threats apply'],['25','requirement IDs apply to every vehicle, whatever the answers'],['70','requirement IDs in total across categories A to H']],
+    workflow:[['Describe the vehicle type','Register the manufacturer and give the vehicle details from AIS 189 Annexure A, with the architecture and network diagrams.','Output: the vehicle type under assessment'],
+      ['Applicability and evidence','Answer the seventeen Yes/No questions, then the follow-up questions with the documents and lists the tester needs.','Output: the applicable requirements, with evidence'],
+      ['Requirement assessment','The tester checks each applicable requirement and records Pass or Fail with a justification.','Output: compliance report per requirement']],
+    start:'You will be taken to the AIS 189 vendor workspace to submit your vehicle.'},
+  'isvs':{noun:'device',
+    title:'Security assessment of consumer IoT devices against the OWASP ISVS',
+    stats:[['5','requirement chapters, V1 to V5, from the IoT ecosystem to the hardware platform'],['3','verification levels: 30 · 55 · 60 requirements at Level 1 · 2 · 3'],['3 roles','vendor submits, tester assesses, administrator oversees'],['Report','compliance report per requirement']],
+    overview:['The OWASP IoT Security Verification Standard (ISVS) is an open, community-driven standard of security requirements for IoT ecosystems and their components: the device hardware, the software platform, the applications that run on it and the protocols it uses to communicate.',
+      'Consumer devices such as cameras, smart plugs, wearables and home hubs connect to home networks, companion apps and cloud services, and often stay in use for years. Manufacturers need to show that a device resists attack through its software, its interfaces and, at the higher levels, its hardware.',
+      'In the sandbox the vendor describes the device and its firmware, declares the target level and answers one questionnaire: fifteen Yes/No questions (A38–A54) decide which features apply, and the assurance questions collect the evidence. Requirements are recorded against GoI requirement IDs mapped to the ISVS. The tester assesses every applicable requirement and records a verdict with a justification.',
+      'It is designed for manufacturers of consumer IoT devices and their companion apps who are preparing for market or responding to customer and retailer security requirements.'],
+    covers:['Device and companion app details, firmware and target level','Communication protocols and wireless security (Wi-Fi, Bluetooth, BLE, Zigbee, LoRa and others)','Secure development lifecycle and source code','Security event logging','User and device authentication, authorization and unique user identification','Debug and serial interfaces such as UART, JTAG and SWD','Personal data (PII), cryptography and sensitive information','Firmware updates with signed and unsigned packages','Network services, operating system hardening and secure boot','Software bill of materials (SBOM), hardware design and decommissioning'],
+    areasEyebrow:'Requirement chapters',areasTitle:'Five chapters, from the ecosystem down to the hardware',
+    areasIntro:'The ISVS arranges its requirements as a stack: the hardware platform at the bottom, the software platform and communication above it, user space applications on top, and the surrounding ecosystem around them all.',
+    areas:[['V1','IoT ecosystem','Security designed in before development and maintained through every stage of the product lifecycle.','Ecosystem design · Supply chain · Secure development · Logging · Incident response · End-of-life support'],
+      ['V2','User space applications','Secure access to the device by users and machines, and protection of sensitive data.','Authentication · Authorization · Data protection'],
+      ['V3','Software platform','The bootloader, operating system configuration and update mechanism the device’s applications rely on.','Bootloader · OS configuration · Software updates · Security chips'],
+      ['V4','Communication','Authenticity, integrity and confidentiality of the data and commands the device exchanges over wired and wireless links.','Machine-to-machine · Bluetooth · Wi-Fi · Zigbee · LoRaWAN'],
+      ['V5','Hardware platform','The hardware the rest of the stack depends on, configured securely and hardened against physical attack.','Debug interface protection · Secure boot support · Configuration locking']],
+    levelsEyebrow:'Verification levels',levelsTitle:'Selecting the appropriate level',
+    levelsIntro:'Choose the level from the harm a compromise could cause and the effort an attacker would put in. In the sandbox each level has its own list of requirements, taken from the Level Requirements sheet: 30 at Level 1, 55 at Level 2 and 60 at Level 3.',
+    levels:[['Level 1','Software-only attacks; baseline security for every device'],['Level 2','Attacks that involve the hardware; protection of sensitive data'],['Level 3','Critical devices: defence in depth and anti-tampering']],
+    workflow:[['Define the target','Describe the device, its firmware and companion app, and declare the target level.','Output: scope and target level'],
+      ['Applicability and evidence','Answer the Yes/No questions, then the assurance questions with the documents, packages and lists the tester needs.','Output: the applicable requirements, with evidence'],
+      ['Requirement assessment','The tester checks each applicable requirement and records Pass or Fail with a justification.','Output: compliance report per requirement']],
+    start:'You will be taken to the OWASP ISVS vendor workspace to submit your device.'},
+  'er':{noun:'device',
+    title:'Security assessment of consumer IoT devices against the Essential Requirements',
+    stats:[['22','requirements in one set, with no levels to choose'],['9','requirements apply to every device; the rest depend on its features'],['3 roles','vendor submits, tester assesses, administrator oversees'],['Report','compliance report per requirement']],
+    overview:['The Essential Requirements (ER) are a single, baseline set of security requirements for consumer IoT devices. There are no levels: every device is assessed against the same set, and the device’s own features decide which requirements apply.',
+      'The set looks beyond the firmware to how the device is made and supported: where its components come from, how supply chain risks are managed, how it is developed and updated, and how its hardware resists tampering.',
+      'In the sandbox the vendor describes the device and its firmware and answers one questionnaire: nine Yes/No questions decide which features apply, and the assurance questions (Q110–Q135) collect the evidence. The tester assesses every applicable requirement and records a verdict with a justification.',
+      'It is designed for manufacturers of consumer IoT devices who need to show that a device meets the essential baseline before it reaches the market.'],
+    covers:['Device details, firmware and companion app','Active electronic components, hardware bill of materials and component sourcing','Supply chain risk management, continuity and supplier incident response','Secure development lifecycle and vulnerability disclosure','Source code and hardware design documentation','Communication protocols supported by the device','Debug and serial interfaces','Cryptography, keys, certificates and sensitive information','Signed firmware updates and the boot process','Cloud services and companion apps, trusted execution and tamper detection'],
+    areasEyebrow:'What the requirements address',areasTitle:'Six areas covered by the questionnaire',
+    areasIntro:'The Essential Requirements are grouped here by topic. Each card shows the questions that collect the evidence.',
+    areas:[['Q110 · Q130 · Q132','Supply chain','Component sourcing, the hardware bill of materials and how supply chain risks are identified and mitigated across the product lifecycle.','Approved suppliers · Counterfeit protection · Continuity'],
+      ['Q112 · Q113 · Q129','Secure development','The development lifecycle, vulnerability disclosure, source code and the software bill of materials.','SDLC / SPDF · Vulnerability handling · SBOM'],
+      ['Q117 · Q131 · Q135','Device hardware','Hardware design, debug and serial interfaces, and the detection of physical tampering.','Debug interfaces · Hardware design · Tamper detection'],
+      ['Q122 · Q123 · Q128','Software integrity','Signed firmware updates, trusted execution features and the boot process.','Signed updates · Trusted execution · Boot flow'],
+      ['Q111 · Q124','Communication','The protocols the device supports and the security of its cloud services and companion app.','Protocols · Cloud and companion app'],
+      ['Q120 · Q121','Cryptography and data','The cryptographic mechanisms used and how keys, certificates and sensitive information are protected.','Algorithms · Key management · Sensitive data']],
+    levelsEyebrow:'Applicability',levelsTitle:'How the requirements for a device are selected',
+    levelsIntro:'There are no levels. The answers to the Yes/No questions decide which requirements apply to the device; a few apply to every device.',
+    levels:[['No levels','One requirement set for every device; there is no level to choose'],['9 Yes/No','questions about features such as source code, debug interfaces, cryptography, updates, cloud services and secure boot decide what applies'],['9','requirements apply to every device, whatever the answers'],['22','requirements in total']],
+    workflow:[['Describe the device','Give the device details, firmware and companion app.','Output: the device under assessment'],
+      ['Applicability and evidence','Answer the Yes/No questions, then the assurance questions with the documents and packages the tester needs.','Output: the applicable requirements, with evidence'],
+      ['Requirement assessment','The tester checks each applicable requirement and records Pass or Fail with a justification.','Output: compliance report per requirement']],
+    start:'You will be taken to the Essential Requirements vendor workspace to submit your device.'}
 };
 
 function stdDescription(d,s,staffPk){
@@ -769,13 +839,13 @@ function stdDescription(d,s,staffPk){
       <p class="small muted">A full description of this standard will be added once the ${esc(d.short)} team provides it.</p></section>`;
   return `<section class="stack sdesc" id="std-desc" style="gap:22px">
     <div class="hero"><div class="stack" style="gap:10px"><span class="eyebrow">${esc(d.name)} · ${esc(s.code)}</span><h2 class="sd-title">${esc(D.title)}</h2>
-      <p class="lead">${staffPk?`Applications in the ${esc(d.name)} domain are assessed against ${esc(s.code)}. The tester checks each applicable requirement and records a verdict with a justification.`:`Your product is in the ${esc(d.name)} domain and the standard is ${esc(s.code)}. Start the assessment to open the vendor workspace and submit your component.`}</p></div>
+      <p class="lead">${staffPk?`Applications in the ${esc(d.name)} domain are assessed against ${esc(s.code)}. The tester checks each applicable requirement and records a verdict with a justification.`:`Your product is in the ${esc(d.name)} domain and the standard is ${esc(s.code)}. Start the assessment to open the vendor workspace and submit your ${esc(D.noun||'component')}.`}</p></div>
       <div class="figs">${D.stats.map(([b,t])=>`<div class="fig"><b>${esc(b)}</b><span>${esc(t)}</span></div>`).join('')}</div></div>
     <div class="sd-two"><div class="stack" style="gap:10px"><span class="eyebrow">Assessment overview</span>${D.overview.map(p=>`<p>${esc(p)}</p>`).join('')}</div>
       <div class="card"><h3>What the assessment covers</h3><ul class="sd-list">${D.covers.map(x=>`<li>${esc(x)}</li>`).join('')}</ul></div></div>
-    <div class="stack" style="gap:12px"><span class="eyebrow">Requirement areas</span><h3>Seven foundational requirements</h3>
+    <div class="stack" style="gap:12px"><span class="eyebrow">${esc(D.areasEyebrow||'Requirement areas')}</span><h3>${esc(D.areasTitle||'Seven foundational requirements')}</h3>${D.areasIntro?`<p class="muted">${esc(D.areasIntro)}</p>`:''}
       <div class="sd-grid">${D.areas.map(([t,h,p,sm])=>`<div class="card sd-fr"><span class="sd-tag">${esc(t)}</span><h4>${esc(h)}</h4><p class="small">${esc(p)}</p><span class="sd-sm">${esc(sm)}</span></div>`).join('')}</div></div>
-    <div class="stack" style="gap:12px"><span class="eyebrow">Security levels</span><h3>Selecting the appropriate security level</h3><p class="muted">${esc(D.levelsIntro)}</p>
+    <div class="stack" style="gap:12px"><span class="eyebrow">${esc(D.levelsEyebrow||'Security levels')}</span><h3>${esc(D.levelsTitle||'Selecting the appropriate security level')}</h3><p class="muted">${esc(D.levelsIntro)}</p>
       <div class="sd-grid">${D.levels.map(([t,p])=>`<div class="card"><span class="sd-tag">${esc(t)}</span><p class="small" style="margin-top:8px">${esc(p)}</p></div>`).join('')}</div></div>
     <div class="stack" style="gap:12px"><span class="eyebrow">How it works</span><h3>Assessment workflow</h3>
       <ol class="sd-steps">${D.workflow.map(([h,p,o],i)=>`<li class="card"><span class="sd-n">0${i+1}</span><div class="stack" style="gap:4px"><h4>${esc(h)}</h4><p class="small muted">${esc(p)}</p><span class="sd-out">${esc(o)}</span></div></li>`).join('')}</ol></div>
