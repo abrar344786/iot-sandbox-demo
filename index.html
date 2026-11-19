@@ -684,11 +684,12 @@ window.addEventListener('hashchange',()=>{fromHash();render();});
 const inMed=()=>!!(DOMAINS[S.domain]&&DOMAINS[S.domain].flow)&&['mlanding','massess','mtester','mmap','mreport'].includes(S.view);
 function medNav(){
   if(!inMed()||!S.mrole)return '';
-  const cur=S.view==='mlanding'&&!S.tapp?'home':S.view==='massess'?'home':S.view==='mtester'?'tester':S.view==='mmap'?'map':S.view==='mreport'?(S.rfrom==='tester'?'tester':'home'):'';
+  const vk=S.mrole==='admin'?'vendor':'home';
+  const cur=S.view==='mlanding'&&!S.tapp?(S.mrole==='admin'&&S.mact==='vendor'?'vendor':'home'):S.view==='massess'?vk:S.view==='mtester'?'tester':S.view==='mmap'?'map':S.view==='mreport'?(S.rfrom==='tester'?'tester':vk):'';
   const b=(k,label,act)=>`<button data-a="${act}" ${cur===k?'aria-current="page"':''}>${label}</button>`;
   if(S.mrole==='vendor')return `<nav class="nav">${b('home','My applications','m-home')}</nav>`;
   if(S.mrole==='tester')return `<nav class="nav">${b('tester','Applications','to-tester')}${b('map','Requirement map','to-map')}</nav>`;
-  return `<nav class="nav">${b('home','Home','m-home')}${b('tester','Assessments','to-tester')}${b('map','Requirement map','to-map')}</nav>`;}
+  return `<nav class="nav">${b('home','Home','m-home')}${b('vendor','Vendor applications','m-vendor')}${b('tester','Assessments','to-tester')}${b('map','Requirement map','to-map')}</nav>`;}
 function header(){
   return `<header class="top"><div class="top-in">
     <button class="brand" data-a="home" aria-label="IoT Security Sandbox home"><span class="mark">C-DAC</span>
@@ -1642,12 +1643,12 @@ function medHeroFigs(){
       <div class="fig"><b>4 steps</b><span>details · Security Level · questionnaire · review &amp; submit</span></div>
       <div class="fig"><b>${[1,2,3,4].map(slItems).join(' · ')}</b><span>questionnaire items at SL 1 · 2 · 3 · 4</span></div>
       <div class="fig"><b>${st.cr}</b><span>CRs in scope at SL 4 (FR1–FR7)</span></div>`;}
-function vendorTile(){
+function vendorTile(admin){
   const apps=myMedApps();const nd=apps.filter(a=>a.status!=='submitted').length,ns=apps.length-nd;
   return `<section class="vtile"><div class="main"><span class="eyebrow">Vendor / OEM</span><h2>Start an assessment for your ${esc(P.noun)}</h2>
       <p class="muted">${P.stepsText} Responses lock when you submit.</p>
       <span class="small muted">${nd} draft${nd===1?'':'s'} · ${ns} submitted</span></div>
-    <button class="go on" data-a="new-device">Start new assessment →</button></section>`;}
+    ${admin?'<button class="go on" data-a="m-vendor">Open vendor workspace →</button>':'<button class="go on" data-a="new-device">Start new assessment →</button>'}</section>`;}
 function testerTile(){
   const sub=Object.values(MStore.apps).filter(a=>a.status==='submitted');const k=x=>sub.filter(a=>medStatus(a).k===x).length;
   return `<section class="vtile"><div class="main"><span class="eyebrow">Tester · sandbox lab</span><h2>Assess submitted applications</h2>
@@ -1667,8 +1668,10 @@ function medLanding(){
   if(!S.mrole)return medSignIn();
   if(S.mrole==='tester')return mTesterList();
   const code=esc(stdObj().code),dn=esc(DOMAINS[P.key].name);
+  if(S.mrole==='admin'&&S.mact==='vendor')return medHero(`${dn} · ${code} · Administrator · Vendor workspace`,P.vendorTitle,P.vendorLead)
+    +vendorTile()+myAppsTable()+workflowCard();
   if(S.mrole==='admin')return medHero(`${dn} · ${code} · Administrator`,P.adminTitle,P.adminLead)
-    +`<section class="roles">${vendorTile()}${testerTile()}</section>`+myAppsTable()+workflowCard();
+    +`<section class="roles">${vendorTile(true)}${testerTile()}</section>`+workflowCard();
   return medHero(`${dn} · ${code} · Vendor / OEM`,P.vendorTitle,P.vendorLead)
     +stepper()+vendorTile()+(P.levels?prepChecklist(null,'landing'):prepChecklist())+myAppsTable()+workflowCard();}
 
@@ -2632,15 +2635,15 @@ function firstIncomplete(app){return visibleItems(app).find(it=>!itemDone(it,app
 
 /* ---------- actions ---------- */
 const A={
-  home(){S.std=null;if(window.__ICS)window.__ICS.reset();go('');},
+  home(){S.std=null;S.mact=null;if(window.__ICS)window.__ICS.reset();go('');},
   'pick-domain'(el){const k=el.dataset.d;if(S.domain!==k){S.domain=k;S.std=null;}const d=DOMAINS[k];if(d.standards.length===1)S.std=d.standards[0].id;render();},
   'prep-lv'(el){S.prepLv=S.prepLv||{};S.prepLv[P.key+'.'+P.std]=+el.dataset.sl;S.prepForce=true;render();},
   'pick-std-home'(el){const k=el.dataset.d;S.domain=k;S.std=el.dataset.s;render();const t=document.getElementById('std-desc');if(t)try{t.scrollIntoView({behavior:'smooth',block:'start'});}catch(e){}},
   'dash-role'(el){ls.set('iotsbx.home.role',el.dataset.r);S.info=null;render();},
   'std-info'(el){S.info={d:el.dataset.d,s:el.dataset.s};render();const c=document.getElementById('sd-close');if(c)c.focus();},
   'std-info-close'(el,e){if(el.dataset.self&&e&&e.target!==el)return;S.info=null;render();},
-  'std-start'(el){S.info=null;S.domain=el.dataset.d;S.std=el.dataset.s;A['next-std']();},
-  'dash-portal'(el){const pk=el.dataset.p,r=homeRole()==='admin'?'admin':'tester';S.info=null;
+  'std-start'(el){S.info=null;S.mact=null;S.domain=el.dataset.d;S.std=el.dataset.s;A['next-std']();},
+  'dash-portal'(el){const pk=el.dataset.p,r=homeRole()==='admin'?'admin':'tester';S.info=null;S.mact=null;
     if(pk==='ics'){S.domain='ics';S.std='62443-4-2';if(window.__ICS&&window.__ICS.enterAs)window.__ICS.enterAs(r);go('ics-portal');return;}
     const n=PROF[pk],dk=n.key;S.domain=dk;S.std=n.std;if(dk==='consumer')ls.set('iotsbx.consumer.std',n.std);
     useProfile(pk);setMRole(r);S.tapp=null;S.app=null;go(dk+'-portal');},
@@ -2657,8 +2660,8 @@ const A={
   'next-std'(){if(!S.std)return;if(S.domain==='consumer')ls.set('iotsbx.consumer.std',S.std);if(S.domain==='ics'&&window.__ICS)window.__ICS.enterVendor();go(S.domain+'-portal');},
   'back-std'(){go(S.domain);},
   step(el){const i=+el.dataset.i;if(i===0)go('');else if(i===1)go(S.domain);},
-  'new-device'(){S.app=newMedApp();S.errs={};S.mstep='details';S.item=null;S.confirm=false;go(P.key+'-assess');},
-  'open-med'(el){openMedApp(el.dataset.id);},
+  'new-device'(){S.mact='vendor';S.app=newMedApp();S.errs={};S.mstep='details';S.item=null;S.confirm=false;go(P.key+'-assess');},
+  'open-med'(el){S.mact='vendor';openMedApp(el.dataset.id);},
   'to-landing'(){if(S.app&&S.app.id&&S.app.status!=='submitted')persist();S.app=null;S.confirm=false;go(P.key+'-portal');},
   'file-rm'(el){dropAsset(S.app.files[el.dataset.k]);delete S.app.files[el.dataset.k];render();},
   'qfile-rm'(el){const a=qa(el.dataset.q);if(a.files){dropAsset(a.files[el.dataset.k]);delete a.files[el.dataset.k];}render();},
@@ -2685,7 +2688,8 @@ const A={
   },
   'to-tester'(el){if(el&&el.disabled)return;S.tapp=null;S.confirm=false;go(P.key+'-tester');},
   'to-map'(){S.tapp=null;go(P.key+'-map');},
-  'm-home'(){if(S.app&&S.app.id&&S.app.status!=='submitted')persist();S.app=null;S.tapp=null;S.confirm=false;go(P.key+'-portal');},
+  'm-home'(){if(S.app&&S.app.id&&S.app.status!=='submitted')persist();S.mact=null;S.app=null;S.tapp=null;S.confirm=false;go(P.key+'-portal');},
+  'm-vendor'(){if(S.app&&S.app.id&&S.app.status!=='submitted')persist();S.mact='vendor';S.app=null;S.tapp=null;S.confirm=false;go(P.key+'-portal');},
   'm-role'(el){if(el.disabled)return;setMRole(el.dataset.role);S.tapp=null;S.app=null;go(P.key+'-portal');},
   'm-ask-del'(el,e){e.stopPropagation();S.mdel=el.dataset.id;render();},
   'm-del-cancel'(el,e){e&&e.stopPropagation();S.mdel=null;render();},
