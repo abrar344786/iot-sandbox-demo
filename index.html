@@ -1658,7 +1658,7 @@ function myAppsTable(){
   const apps=myMedApps();if(!apps.length)return '';
   const prog=a=>{if(!a.sl)return '—';const its=visibleItems(a);return `${its.filter(it=>itemDone(it,a)).length} / ${its.length}`;};
   return `<section class="stack"><div class="section-h"><h3>My applications</h3><span class="small muted">${MStore.mode==='shared'?'Saved in the shared workspace':'Saved in this browser'}</span></div>
-    <div class="tw"><table><thead><tr><th>Reference</th><th>${P.devWord}</th>${P.levels?'<th>Level</th>':''}<th>Status</th><th>Answered</th><th>Updated</th></tr></thead><tbody>${apps.map(a=>`<tr class="clickable" data-a="open-med" data-id="${esc(a.id)}"><td class="mono">${esc(a.id)}</td><td><b>${esc(P.devName(a)||'Untitled')}</b><div class="small muted">${esc(P.devVendor(a))}</div></td>${P.levels?`<td>${P.levelLabel(a)}</td>`:''}<td><span class="pill ${medStatus(a).k}">${medStatus(a).t}</span></td><td class="small">${prog(a)}</td><td class="small muted">${esc(fmtDate(a.updatedAt))}</td></tr>`).join('')}</tbody></table></div></section>`;}
+    <div class="tw"><table><thead><tr><th>Reference</th><th>${P.devWord}</th>${P.levels?'<th>Level</th>':''}<th>Status</th><th>Answered</th><th>Updated</th><th></th></tr></thead><tbody>${apps.map(a=>`<tr class="clickable" data-a="open-med" data-id="${esc(a.id)}"><td class="mono">${esc(a.id)}</td><td><b>${esc(P.devName(a)||'Untitled')}</b><div class="small muted">${esc(P.devVendor(a))}</div></td>${P.levels?`<td>${P.levelLabel(a)}</td>`:''}<td><span class="pill ${medStatus(a).k}">${medStatus(a).t}</span></td><td class="small">${prog(a)}</td><td class="small muted">${esc(fmtDate(a.updatedAt))}</td>${delCell(a)}</tr>`).join('')}</tbody></table></div></section>`;}
 function workflowCard(){
   const lane=(label,steps,end)=>`<div class="lane"><div class="lane-l">${label}</div><div class="flow">${steps.map(x=>`<span class="st">${esc(x)}</span><span class="ar">→</span>`).join('')}<span class="st end">${end}</span></div></div>`;
   return `<section class="card stack"><div class="section-h"><h3>Assessment workflow</h3><span class="small muted">Vendor and tester share one workspace</span></div>
@@ -1775,8 +1775,22 @@ function makeStore(name,col){
     const had=Object.keys(this.config||{}).length>0;this.config=deepMerge(clone(this.config)||{},patch);
     if(this.mode!=='shared'){ls.set(CKEY,this.config);return Promise.resolve();}
     const full=clone(this.config);
-    return this._q('cfg',()=>had?this.db.doc(col+'config/site').update(patch):this.db.doc(col+'config/site').set(full));}
+    return this._q('cfg',()=>had?this.db.doc(col+'config/site').update(patch):this.db.doc(col+'config/site').set(full));},
+  async deleteApp(id){
+    const a=this.apps[id],hadS=!!this.asmts[id];delete this.apps[id];delete this.asmts[id];
+    if(this.mode!=='shared'){ls.set(MKEY,this.apps);ls.set(AKEY,this.asmts);return;}
+    await this._q('a:'+id,()=>this.db.doc(col+'apps/'+id).delete());
+    if(hadS)await this._q('s:'+id,()=>this.db.doc(col+'asmts/'+id).delete()).catch(()=>{});
+    if(a&&this.assets)assetIds(a).forEach(x=>{try{Promise.resolve(this.assets.delete(x)).catch(()=>{});}catch(e){}});}
 };}
+function assetIds(o,out){out=out||[];if(o&&typeof o==='object'){if(typeof o.assetId==='string')out.push(o.assetId);Object.values(o).forEach(v=>assetIds(v,out));}return out;}
+/* who may delete: the vendor its own drafts; the administrator any application */
+function canDelMed(a){return a&&((a.status||'draft')==='draft'||S.mrole==='admin');}
+function delCell(a,isTester){
+  if(!canDelMed(a))return '<td></td>';
+  const sub=(a.status||'draft')!=='draft';
+  if(S.mdel===a.id)return `<td class="num"><span class="row end" style="flex-wrap:nowrap"><span class="small">${sub?'Delete this application and its assessment? This cannot be undone.':'Delete draft?'}</span><button class="btn sm danger" data-a="m-del" data-id="${esc(a.id)}">Delete</button><button class="btn sm" data-a="m-del-cancel">Keep</button></span></td>`;
+  return `<td class="num"><button class="btn sm quiet" data-a="m-ask-del" data-id="${esc(a.id)}" title="${sub?'Administrator only: delete the application and its assessment':'Delete this draft'}">Delete</button></td>`;}
 const MED_STORE=makeStore('medical','med'),AUTO_STORE=makeStore('automotive','auto'),CONS_STORE=makeStore('consumer','cons'),CONS_ER_STORE=makeStore('consumer-er','conser');
 function errText(e){
   const c=e&&e.code;
@@ -1875,10 +1889,10 @@ function mTesterList(){
   +(S.tsettings?`<section class="card stack"><h3>Procedure and case study repository</h3><p class="small muted">Each requirement screen links here. Put <span class="mono">{id}</span> where the requirement goes, for example <span class="mono">https://git.example.in/${P.key}/procedures/{id}</span>; it becomes the requirement’s GoI ID, e.g. <span class="mono">${esc(P.idExample)}</span>. Without <span class="mono">{id}</span> every requirement links to the same page.</p>
       <div class="field"><label for="cfg-repo">Repository URL</label><input id="cfg-repo" type="url" value="${esc(tpl)}" placeholder="https://…/{id}"></div>
       <div class="row" style="justify-content:flex-end"><button class="btn" data-a="t-settings">Cancel</button><button class="btn primary" data-a="t-save-settings">Save link</button></div></section>`:'')
-  +(apps.length?`<div class="tw"><table><thead><tr><th>Reference</th><th>Vendor</th><th>${P.devWord}</th>${P.levels?'<th>Level</th>':''}<th>Submitted</th><th>Progress</th><th>Status</th></tr></thead><tbody>
+  +(apps.length?`<div class="tw"><table><thead><tr><th>Reference</th><th>Vendor</th><th>${P.devWord}</th>${P.levels?'<th>Level</th>':''}<th>Submitted</th><th>Progress</th><th>Status</th>${S.mrole==='admin'?'<th></th>':''}</tr></thead><tbody>
     ${apps.map(a=>{const st=medStatus(a);const c=medCounts(a);
       return `<tr class="clickable" data-a="t-open" data-id="${esc(a.id)}"><td class="mono">${esc(a.id)}</td><td>${esc(P.devVendor(a))}</td><td><b>${esc(P.devName(a))}</b><div class="small muted">${esc(P.devSub(a).join(' · '))}</div></td>${P.levels?`<td>${P.levelLabel(a)}</td>`:''}<td class="small muted">${fmtDay(a.submittedAt)}</td>
-      <td style="min-width:150px"><div class="small" style="margin-bottom:4px">${c.done} / ${c.total} ${P.reqWord}s</div>${progBar(c)}</td><td><span class="pill ${st.k}">${st.t}</span></td></tr>`;}).join('')}</tbody></table></div>`
+      <td style="min-width:150px"><div class="small" style="margin-bottom:4px">${c.done} / ${c.total} ${P.reqWord}s</div>${progBar(c)}</td><td><span class="pill ${st.k}">${st.t}</span></td>${S.mrole==='admin'?delCell(a,true):''}</tr>`;}).join('')}</tbody></table></div>`
   :`<div class="card empty"><h3>No submitted applications</h3><p>Applications appear here once a vendor submits them. Load the example submission to try the assessment workflow.</p><button class="btn primary" data-a="t-example">Load example submission</button></div>`);}
 
 function repoLink(e){const t=(MStore.config.repoTemplate||'').trim();if(!t)return '';const id=goiId(e)||crName(e).replace(/\s+/g,'-').replace(/[()]/g,'');return t.includes('{id}')?t.split('{id}').join(encodeURIComponent(id)):t;}
@@ -2673,6 +2687,13 @@ const A={
   'to-map'(){S.tapp=null;go(P.key+'-map');},
   'm-home'(){if(S.app&&S.app.id&&S.app.status!=='submitted')persist();S.app=null;S.tapp=null;S.confirm=false;go(P.key+'-portal');},
   'm-role'(el){if(el.disabled)return;setMRole(el.dataset.role);S.tapp=null;S.app=null;go(P.key+'-portal');},
+  'm-ask-del'(el,e){e.stopPropagation();S.mdel=el.dataset.id;render();},
+  'm-del-cancel'(el,e){e&&e.stopPropagation();S.mdel=null;render();},
+  async 'm-del'(el,e){e.stopPropagation();const id=el.dataset.id,a=MStore.apps[id];S.mdel=null;
+    if(!canDelMed(a)){toast('Only an administrator can delete a submitted application.');render();return;}
+    const sub=(a.status||'draft')!=='draft';
+    try{await MStore.deleteApp(id);if(S.tapp===id)S.tapp=null;toast(sub?'Application and its assessment deleted':'Draft deleted');}catch(err){console.error(err);toast(errText(err));}
+    render();},
   'm-signout'(){setMRole(null);S.app=null;S.tapp=null;S.confirm=false;go(P.key+'-portal');},
   'map-sl'(el){S.mapSL=+el.dataset.sl;render();},
   'map-gate'(el){if(el.disabled)return;S.mapGates[el.dataset.g]=!S.mapGates[el.dataset.g];render();},
@@ -3281,7 +3302,10 @@ const Store={
   },
   createApp(id,data){return this._write('applications',id,data,true);},
   updateApp(id,patch){return this._write('applications',id,patch);},
-  async deleteApp(id){delete this.apps[id];if(this.mode==='local'){this.persist();return;}await this.db.doc('applications/'+id).delete();},
+  async deleteApp(id){const a=this.apps[id],hadS=!!this.asmts[id];delete this.apps[id];delete this.asmts[id];if(this.mode==='local'){this.persist();return;}
+    await this.db.doc('applications/'+id).delete();
+    if(hadS)await Promise.resolve(this.db.doc('assessments/'+id).delete()).catch(()=>{});
+    if(a&&this.assets){const ids=[];(function w(o){if(o&&typeof o==='object'){if(typeof o.assetId==='string')ids.push(o.assetId);Object.values(o).forEach(w);}})(a);ids.forEach(x=>{try{Promise.resolve(this.assets.delete(x)).catch(()=>{});}catch(e){}});}},
   putAsmt(id,patch){return this._write('assessments',id,patch);},
   putConfig(patch){return this._write('config','site',patch);}
 };
@@ -3504,7 +3528,7 @@ function vendorList(){
       <td>${a.sl?'SL '+a.sl:'—'}</td>
       <td><span class="pill ${st.k}">${st.t}</span></td>
       <td class="small muted">${fmtDate(a.updatedAt)}</td>
-      <td class="num">${a.status==='draft'?(isDel?`<span class="row end"><span class="small">Delete draft?</span><button class="btn sm danger" data-a="delete-app" data-id="${esc(a.id)}">Delete</button><button class="btn sm" data-a="cancel-confirm">Keep</button></span>`:`<button class="btn sm quiet" data-a="ask-delete" data-id="${esc(a.id)}">Delete</button>`):(st.k==='done'?`<button class="btn sm" data-a="open-report" data-id="${esc(a.id)}">Report</button>`:'')}</td>
+      <td class="num">${a.status==='draft'?icsDel(a,isDel):`<span class="row end" style="flex-wrap:nowrap">${st.k==='done'?`<button class="btn sm" data-a="open-report" data-id="${esc(a.id)}">Report</button>`:''}${S.role==='admin'?icsDel(a,isDel):''}</span>`}</td>
     </tr>`;}).join('');
   return `<div class="section-h"><div class="stack" style="gap:4px"><span class="eyebrow">Vendor / OEM</span><h2>My applications</h2></div>
     <div class="row"><button class="btn" data-a="example-vendor">Load example application</button><button class="btn primary" data-a="new-app">Start new assessment</button></div></div>
@@ -3667,6 +3691,10 @@ function answerView(qn,a){
   return h;}
 
 /* ---------- Tester list ---------- */
+function icsDel(a,isDel){
+  const sub=a.status&&a.status!=='draft';
+  if(isDel)return `<span class="row end" style="flex-wrap:nowrap"><span class="small">${sub?'Delete this application and its assessment? This cannot be undone.':'Delete draft?'}</span><button class="btn sm danger" data-a="delete-app" data-id="${esc(a.id)}">Delete</button><button class="btn sm" data-a="cancel-confirm">Keep</button></span>`;
+  return `<button class="btn sm quiet" data-a="ask-delete" data-id="${esc(a.id)}" title="${sub?'Administrator only: delete the application and its assessment':'Delete this draft'}">Delete</button>`;}
 function testerList(){
   if(!Store.appsReady)return `<div class="card empty"><p>Loading applications…</p></div>`;
   const apps=Object.entries(Store.apps).filter(([id,a])=>a.status&&a.status!=='draft').map(([id,a])=>({id,...a})).sort((a,b)=>(b.submittedAt||'').localeCompare(a.submittedAt||''));
@@ -3679,11 +3707,11 @@ function testerList(){
   ${S.showSettings?`<section class="card stack"><h3>Procedure and case study repository</h3><p class="small muted">Each requirement screen links here. Use <span class="mono">{id}</span> where the requirement ID belongs, for example <span class="mono">https://git.example.in/62443/procedures/{id}</span>. Without <span class="mono">{id}</span> every requirement links to the same page.</p>
     <div class="field"><label for="cfg-repo">Repository URL</label><input id="cfg-repo" type="url" value="${esc(tpl)}" placeholder="https://…/{id}"></div>
     <div class="row end"><button class="btn" data-a="toggle-settings">Cancel</button><button class="btn primary" data-a="save-settings">Save link</button></div></section>`:''}
-  ${apps.length?`<div class="tw"><table><thead><tr><th>Reference</th><th>Vendor</th><th>Component</th><th>Level</th><th>Submitted</th><th>Progress</th><th>Status</th></tr></thead><tbody>
+  ${apps.length?`<div class="tw"><table><thead><tr><th>Reference</th><th>Vendor</th><th>Component</th><th>Level</th><th>Submitted</th><th>Progress</th><th>Status</th>${S.role==='admin'?'<th></th>':''}</tr></thead><tbody>
     ${apps.map(a=>{const asmt=Store.asmts[a.id];const st=appStatus(a,asmt);const c=verdictCounts(a,asmt);
       return `<tr class="clickable" data-a="assess" data-id="${esc(a.id)}"><td class="mono">${esc(a.id)}</td><td>${esc(a.meta?.vendor||'')}</td><td><b>${esc(a.meta?.component||'')}</b><div class="small muted">${esc(a.meta?.model||'')}</div></td><td>SL ${a.sl}</td><td class="small muted">${fmtDay(a.submittedAt)}</td>
       <td style="min-width:150px"><div class="small tnum" style="margin-bottom:4px">${c.done} / ${c.total}</div><div class="progress"><i class="p" style="width:${c.total?c.pass/c.total*100:0}%"></i><i class="f" style="width:${c.total?c.fail/c.total*100:0}%"></i></div></td>
-      <td><span class="pill ${st.k}">${st.t}</span></td></tr>`;}).join('')}</tbody></table></div>`:
+      <td><span class="pill ${st.k}">${st.t}</span></td>${S.role==='admin'?`<td class="num">${icsDel(a,S.confirm==='delete:'+a.id)}</td>`:''}</tr>`;}).join('')}</tbody></table></div>`:
   `<div class="card empty"><h3>No submitted applications</h3><p>Applications appear here once a vendor submits them. Load the example submission to try the assessment workflow.</p><button class="btn primary" data-a="example-tester">Load example submission</button></div>`}`;}
 
 /* ---------- Tester assessment ---------- */
@@ -3900,7 +3928,10 @@ const A={
   'open-app'(el){openVendorApp(el.dataset.id||S.appId);},
   'ask-delete'(el,e){e.stopPropagation();S.confirm='delete:'+el.dataset.id;render();},
   'cancel-confirm'(el,e){e&&e.stopPropagation();S.confirm=null;render();},
-  async 'delete-app'(el,e){e.stopPropagation();const id=el.dataset.id;S.confirm=null;await attempt(()=>Store.deleteApp(id),'Draft deleted');render();},
+  async 'delete-app'(el,e){e.stopPropagation();const id=el.dataset.id,a=Store.apps[id];S.confirm=null;if(!a){render();return;}
+    const sub=a.status&&a.status!=='draft';
+    if(sub&&S.role!=='admin'){toast('Only an administrator can delete a submitted application.');render();return;}
+    await attempt(()=>Store.deleteApp(id),sub?'Application and its assessment deleted':'Draft deleted');if(S.appId===id)S.appId=null;render();},
   'goto-step'(el){if(el.disabled)return;S.step=el.dataset.step;S.confirm=null;render();window.scrollTo(0,0);},
   async 'save-details'(){
     const d=S.draft;const m=d.meta||{};
