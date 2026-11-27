@@ -3484,7 +3484,6 @@ function icsPrepItems(sl){
   const it=(k,g,t,r,refs)=>({k,g,t,r,refs});
   const items=[
     it('gates','Answers to prepare','Which of the ten capabilities (A1–A10) the component has: they decide which of the questions below are asked','A1–A10'),
-    ...Q.filter(([n,q])=>q.type==='firmware').map(([n])=>it('fw','Files to upload','Signed and unsigned firmware update packages in one .zip file',ref(n),['Q'+n])),
     ...Q.filter(([n,q])=>q.type==='multidoc').map(([n,q])=>it('md'+n,'Files to upload',q.docLabel+' (PDF)',ref(n),['Q'+n])),
     ...(docsA.length?[it('docs','Files to upload',`A short written answer and a supporting PDF for each of these ${docsA.length} descriptive question${docsA.length>1?'s':''}`,span(qn(docsA)),qn(docsA))]:[]),
     ...(docsG.length?[it('docsg','Files to upload',`The same for ${docsG.length} more descriptive question${docsG.length>1?'s':''} asked only if the related capability is Yes`,span(qn(docsG)),qn(docsG))]:[]),
@@ -3505,7 +3504,7 @@ function icsPrepList(items,done,tag){
 function icsPrep(sl,mode){
   const key='iotsbx.prep.ics',done=new Set(ls.get(key)||[]);
   if(mode==='landing'){
-    const cur=icsPrepDef(),items=[{k:'id',g:'Component details',t:'Component identity: vendor, name, model / order number, component type, hardware and firmware versions, and a contact person'},...icsPrepMark(icsPrepItems(cur),cur)];
+    const cur=icsPrepDef(),items=[{k:'id',g:'Component details',t:'Component identity: vendor, name, model / order number, component type, hardware and firmware versions, and a contact person'},{k:'fw',g:'Component details',t:'Signed and unsigned firmware packages in one .zip file (uploaded with the component details; it also answers Q21)'},...icsPrepMark(icsPrepItems(cur),cur)];
     const nq=icsPrepItems(cur).nq,n=items.filter(x=>done.has(x.k)).length,nw=items.filter(x=>x.nw||x.nwr).length;
     return `<details class="card prep" ${n<items.length||S.prepOpen?'open':''}>
     <summary><span class="stack" style="gap:2px"><b>Before you start: keep these ready</b><span class="small muted">Listed level-wise · ${nq} questions can be asked at SL ${cur} · ${n} of ${items.length} ready · tick items for your own tracking; nothing here blocks you from starting</span></span></summary>
@@ -3582,6 +3581,8 @@ function stepDetails(d){
       ${f('contact','Contact person','Name of the vendor’s point of contact')}
       ${f('email','Contact email','name@company.com',false,'email')}
       <div class="field full"><label for="f-desc">Short description</label><textarea id="f-desc" data-f="meta.desc" placeholder="What the component does and where it is deployed…" style="min-height:80px">${esc(m.desc||'')}</textarea></div>
+      <div style="grid-column:1/-1;display:flex;flex-direction:column;gap:6px">${uploadField(21,(d.answers||{})[21]||{},'.zip','ZIP','Firmware package: signed and unsigned (.zip)')}
+        <p class="help">Put both the signed and the unsigned firmware images in one .zip file. This also answers Q21 of the assurance questionnaire, so you will not be asked for it again.</p></div>
     </div>
     <div class="qfoot"><span class="small muted">Fields marked * are required.</span><button class="btn primary" data-a="save-details">Save & Continue →</button></div>
   </section>`;}
@@ -3633,7 +3634,7 @@ function questionForm(qn,a,d){
     case 'text':h+=`<div class="field"><label for="q-${qn}-text" class="req">Answer</label><textarea id="q-${qn}-text" data-qa="text" data-q="${qn}" placeholder="${esc(q.ph||'')}">${esc(a.text||'')}</textarea></div>`+(q.doc?uploadField(qn,a,'.pdf','PDF','Supporting document / evidence'):'');break;
     case 'number':h+=`<div class="field" style="max-width:360px"><label for="q-${qn}-num" class="req">${esc(q.label)}</label><div class="row" style="flex-wrap:nowrap"><input id="q-${qn}-num" type="number" min="${q.min||0}" step="1" inputmode="numeric" data-qa="num" data-q="${qn}" value="${a.num??''}" ${a.na?'disabled':''}><span class="muted">${esc(q.unit)}</span></div></div>
       <label class="opt" style="max-width:420px"><input type="checkbox" data-qna="${qn}" ${a.na?'checked':''}><span>Not supported by the component</span></label>`;break;
-    case 'firmware':h+=`<p class="help">${esc(q.hint)}</p>`+uploadField(qn,a,'.zip','ZIP','Firmware package');break;
+    case 'firmware':h+=`<p class="help">${esc(q.hint)}</p>`+((a.files||[]).length?`<div class="banner ok"><b>Auto-filled from Component details.</b><span>This is the package uploaded there. Replacing it here also updates Component details.</span></div>`:'')+uploadField(qn,a,'.zip','ZIP','Firmware package');break;
   }
   if(['multi','single','number','groups','multidoc'].includes(q.type))
     h+=`<div class="field"><label for="q-${qn}-notes">Notes for the tester <span class="muted">(optional)</span></label><textarea id="q-${qn}-notes" data-qa="notes" data-q="${qn}" style="min-height:70px" placeholder="${qn===38?'Port numbers and services, e.g. TCP 443 (HTTPS), TCP 102 (engineering)…':'Context that helps the tester verify this answer…'}">${esc(a.notes||'')}</textarea></div>`;
@@ -3671,7 +3672,7 @@ function stepReview(d){
   </section>`;}
 function reviewBody(d,editable){
   const qs=appQuestions(d);const ans=d.answers||{};const m=d.meta||{};const g=d.gates||{};
-  return `<dl class="kv"><dt>Vendor</dt><dd>${esc(m.vendor||'—')}</dd><dt>Component</dt><dd>${esc(m.component||'—')} · ${esc(m.model||'')}</dd><dt>Type</dt><dd>${esc(m.ctype||'—')}</dd><dt>Hardware / firmware</dt><dd>${esc(m.hw||'—')} / ${esc(m.fw||'—')}</dd><dt>Declared level</dt><dd>SL ${d.sl}</dd><dt>Applicable requirements</dt><dd class="tnum">${applicable(d).length} of ${REQS.length}</dd></dl>
+  return `<dl class="kv"><dt>Vendor</dt><dd>${esc(m.vendor||'—')}</dd><dt>Component</dt><dd>${esc(m.component||'—')} · ${esc(m.model||'')}</dd><dt>Type</dt><dd>${esc(m.ctype||'—')}</dd><dt>Hardware / firmware</dt><dd>${esc(m.hw||'—')} / ${esc(m.fw||'—')}</dd><dt>Firmware package</dt><dd>${esc((((d.answers||{})[21]||{}).files||[]).map(f=>f.name).join(', ')||'—')}</dd><dt>Declared level</dt><dd>SL ${d.sl}</dd><dt>Applicable requirements</dt><dd class="tnum">${applicable(d).length} of ${REQS.length}</dd></dl>
     <div><div class="lbl" style="margin-bottom:8px">Applicability</div><div class="chips">${GATES.map(x=>`<span class="chip" title="${esc(x.q)}"><span class="mono">${x.id}</span> ${g[x.id]?'Yes':'No'}</span>`).join('')}</div></div>
     <div class="stack">${qs.map(q=>{const ok=qComplete(q,ans[q]);return `<div class="art"><div class="row between"><div class="aq"><span class="mono">Q${q}</span>${esc(QUESTIONS[q].t)}</div>${ok?'':`<span class="pill open">Incomplete</span>`}</div>${ok?answerView(q,ans[q]):`<p class="small muted">${esc(missingFor(q,ans[q]))}</p>`}${editable&&!ok?`<div><button class="btn sm" data-a="goto-qn" data-q="${q}">Answer Q${q}</button></div>`:''}</div>`;}).join('')}</div>`;}
 function vendorLocked(d){
@@ -3940,11 +3941,13 @@ const A={
   async 'save-details'(){
     const d=S.draft;const m=d.meta||{};
     const need=[['vendor','Vendor / OEM organisation'],['component','Component name'],['model','Model / order number'],['ctype','Component type'],['fw','Firmware version']].filter(([k])=>!(m[k]||'').trim());
+    const fw=(d.answers||{})[21];
+    if(!fw||!(fw.files||[]).length)need.push(['fw-zip','Firmware package (.zip)']);
     if(need.length){toast('Fill in: '+need.map(x=>x[1]).join(', ')+'.');return;}
-    const t=nowISO();
-    if(!d.id){const id=newId();const data={meta:m,gates:{},answers:{},status:'draft',createdBy:Store.me.id||'local',createdAt:t,updatedAt:t};
+    const t=nowISO();fw.at=t;
+    if(!d.id){const id=newId();const data={meta:m,gates:{},answers:{21:clone(fw)},status:'draft',createdBy:Store.me.id||'local',createdAt:t,updatedAt:t};
       const ok=await attempt(()=>Store.createApp(id,data));if(!ok)return;d.id=id;S.appId=id;Object.assign(d,data,{id});}
-    else{const ok=await saveDraft({meta:m});if(!ok)return;}
+    else{const ok=await saveDraft({meta:m,answers:{21:clone(fw)}});if(!ok)return;}
     S.step='sl';render();window.scrollTo(0,0);},
   'set-sl'(el){S.draft.sl=+el.dataset.sl;render();},
   async 'save-sl'(){if(!S.draft.sl)return;if(await saveDraft({sl:S.draft.sl})){S.step='gates';render();window.scrollTo(0,0);}},
